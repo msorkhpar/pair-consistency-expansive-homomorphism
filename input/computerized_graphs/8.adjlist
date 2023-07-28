@@ -1,0 +1,9 @@
+#/mnt/Data/Projects/Python/English-digits-simplified-structure-graph/main.py
+# GMT Fri Jul 28 03:15:54 2023
+# 
+(64, 64)|(960, 64)|(448, 512)
+(960, 64)|(576, 512)
+(576, 512)|(960, 960)|(448, 512)
+(960, 960)|(64, 960)
+(64, 960)|(448, 512)
+(448, 512)
