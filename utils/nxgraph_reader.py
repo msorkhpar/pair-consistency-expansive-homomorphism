@@ -6,11 +6,15 @@ def _convert_node(node_str: str) -> tuple[int, int]:
     x, y = map(int, result)
     return x, y
 
-
-def construct_nxgraph(graph_path, type=nx.Graph) -> nx.Graph | nx.DiGraph:
-    G = nx.read_adjlist(graph_path, create_using=type, delimiter="|", nodetype=_convert_node)
+def construct_nxgraph(graph_path, type=nx.Graph, add_self_loops=False) -> nx.Graph | nx.DiGraph:
+    graph = nx.read_adjlist(graph_path, create_using=type, delimiter="|", nodetype=_convert_node)
     if type == nx.DiGraph:
-        for uv in list(G.edges()):
+        for uv in list(graph.edges()):
             u, v = uv
-            G.add_edge(v, u)
-    return G
+            graph.add_edge(v, u)
+            if add_self_loops:
+                graph.add_edge(u, u)
+                graph.add_edge(v, v)
+
+
+    return graph

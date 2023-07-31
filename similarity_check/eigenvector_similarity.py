@@ -15,8 +15,8 @@ def __select_k(spectrum, minimum_energy=0.9):
 
 
 def similarity(g, h):
-    laplacian1 = nx.spectrum.laplacian_spectrum(g)
-    laplacian2 = nx.spectrum.laplacian_spectrum(h)
+    laplacian1 = nx.spectrum.normalized_laplacian_spectrum(g)
+    laplacian2 = nx.spectrum.normalized_laplacian_spectrum(h)
     k1 = __select_k(laplacian1)
     k2 = __select_k(laplacian2)
     k = min(k1, k2)

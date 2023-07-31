@@ -27,10 +27,10 @@ if __name__ == '__main__':
     logger.info(f"Loaded configurations:{config}")
     logger.info(f"{config.g_graph_path} to {config.h_graph_path}")
     G = construct_nxgraph(config.g_graph_path, type=nx.DiGraph)
-    H = construct_nxgraph(config.h_graph_path, type=nx.DiGraph)
+    H = construct_nxgraph(config.h_graph_path, type=nx.DiGraph , add_self_loops=True)
 
     costs = calculate_mapping_cost(G, H, alpha, beta, gamma, delta, tau)
-    calculate_self_loop_cost(G, H, costs, gamma)
+    #calculate_self_loop_cost(G, H, costs, gamma)
     solver = Solver(G, H, costs)
     solution = solver.solve()
     logger.info(f"G to H mapping cost: {solution.cost}")
