@@ -207,10 +207,10 @@ def __draw_mapping(output, mappings: dict[EdgeMap, dict[str, float]], names: dic
             f" Z={round(mappings[mapping]['distance'], 2)}, D={round(mappings[mapping]['direction'], 2)}, "
             f"O={round(mappings[mapping]['orientation'], 2)}]")
         total_cost += mappings[mapping]['cost']
-        cv2.putText(output, text, (1050, 30 + counter * 50), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 0),
+        cv2.putText(output, text, (1050, 30 + counter * 50 + y_padding), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 0),
                     2, cv2.LINE_AA, False)
         counter += 1
-    cv2.putText(output, f"Total Cost= {round(total_cost, 3)}", (1050, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.9,
+    cv2.putText(output, f"Total Cost= {round(total_cost, 3)}", (1050, 30 + y_padding), cv2.FONT_HERSHEY_SIMPLEX, 0.9,
                 (0, 0, 0), 2, cv2.LINE_AA, False)
 
 
@@ -239,20 +239,19 @@ def draw_LP_result(G: nx.Graph, H: nx.Graph, output_path: str,
         main_output = np.ones((1024, 1024 + 900, 3), np.uint8) * 255
         second_output = np.ones((1024, 1024 + 900, 3), np.uint8) * 255
     else:
-        main_output = np.ones((2148, 512, 3), np.uint8) * 255
-        second_output = np.ones((2148, 512, 3), np.uint8) * 255
+        main_output = np.ones((2148, 1024 + 900, 3), np.uint8) * 255
+        second_output = np.ones((2148, 1024 + 900, 3), np.uint8) * 255
 
     __draw_graph(main_output, G, names, 0, 0)
     __draw_graph(second_output, H, names, 0, 0)
     __draw_mapping(second_output, g_to_h_mappings, names, 0, 0)
 
     if h_to_g_mappings:
-        counter = 0
-        __draw_graph(main_output, H, names, 0, 1124)
-        __draw_graph(second_output, G, names, 0, 1124)
+        __draw_graph(main_output, G, names, 0, 1124)
+        __draw_graph(second_output, H, names, 0, 1124)
         __draw_mapping(second_output, h_to_g_mappings, names, 0, 1124)
-    output = cv2.addWeighted(main_output, 0.25, second_output, 0.75, 0)
 
+    output = cv2.addWeighted(main_output, 0.25, second_output, 0.75, 0)
     output = cv2.copyMakeBorder(output.copy(), 10, 10, 10, 10, cv2.BORDER_CONSTANT, value=[255, 255, 255])
 
     if output_path:

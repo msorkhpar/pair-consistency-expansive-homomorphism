@@ -28,11 +28,12 @@ if __name__ == '__main__':
     logger = logging.getLogger(__name__)
 
     logger.info(f"Loaded configurations:{config}")
-    output_path = "./output2"
+    output_path = "./output"
     shutil.rmtree(output_path, ignore_errors=True)
     os.makedirs(output_path)
 
     G = construct_nxgraph(config.g_graph_path)
+    G_prime = construct_nxgraph(config.g_graph_path, type=nx.DiGraph)
 
     result = []
     counter = 0
@@ -41,28 +42,26 @@ if __name__ == '__main__':
             counter += 1
             h_adjlist_path = os.path.join(root, h_adjlist)
             h_name = h_adjlist.split(".")[0]
-            H = construct_nxgraph(h_adjlist_path, type=nx.DiGraph)
+            H = construct_nxgraph(h_adjlist_path)
+            H_prime = construct_nxgraph(h_adjlist_path, type=nx.DiGraph)
             logger.info(f"Running against {h_name}")
 
-            g_to_h_costs = calculate_mapping_cost(G, H, alpha, beta, gamma, delta, tau)
-            calculate_self_loop_cost(G, H, g_to_h_costs, gamma)
-
-            solver_g_to_h_solver = Solver(G, H, g_to_h_costs)
+            g_to_h_costs = calculate_mapping_cost(G, H_prime, alpha, beta, gamma, delta, tau)
+            calculate_self_loop_cost(G, H_prime, g_to_h_costs, gamma)
+            solver_g_to_h_solver = Solver(G, H_prime, g_to_h_costs)
             g_to_h = solver_g_to_h_solver.solve()
-
             logger.info(g_to_h)
             solver_g_to_h_solver.clear()
+            winner_costs_g_to_h = {key: g_to_h_costs[key] for key in g_to_h.variables.keys()}
 
-            # h_to_g_costs = calculate_mapping_cost(H, G, alpha, beta, gamma, delta, tau)
-            # calculate_self_loop_cost(H, G, h_to_g_costs, gamma)
-            #
-            # solver_h_to_g_solver = Solver(H, G, h_to_g_costs)
-            # h_to_g = solver_h_to_g_solver.solve()
-            # logger.info(h_to_g)
-            #
-            # solver_h_to_g_solver.clear()
-            winner_costs = {key: g_to_h_costs[key] for key in g_to_h.variables.keys()}
-            draw_LP_result(G, H, os.path.join(output_path, f"{h_name}.png"), winner_costs)
+            h_to_g_costs = calculate_mapping_cost(H, G_prime, alpha, beta, gamma, delta, tau)
+            calculate_self_loop_cost(H, G_prime, h_to_g_costs, gamma)
+            solver_h_to_g_solver = Solver(H, G_prime, h_to_g_costs)
+            h_to_g = solver_h_to_g_solver.solve()
+            logger.info(h_to_g)
+            winner_costs_h_to_g = {key: h_to_g_costs[key] for key in h_to_g.variables.keys()}
+
+            draw_LP_result(G, H, os.path.join(output_path, f"{h_name}.png"), winner_costs_g_to_h, winner_costs_h_to_g)
             # list(h_to_g.variables.keys()))
 
             result.append([
