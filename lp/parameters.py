@@ -5,6 +5,7 @@ import math
 import sys
 from functools import lru_cache
 
+import networkx as nx
 import numpy as np
 from ortools.linear_solver import pywraplp
 
@@ -70,16 +71,18 @@ class EdgeMap:
 
 
 class Parameters:
-
-    def __init__(self, g_edges: list[Edge], h_edges: list[Edge], mapping_costs: dict[EdgeMap, dict[str, float]],
-                 transform_labels=None):
+    def __init__(self, g: nx.Graph, h: nx.gnr_graph, g_edges: list[Edge], h_edges: list[Edge],
+                 names: dict[tuple[int, int], str],
+                 mapping_costs: dict[EdgeMap, dict[str, float]]):
         self.variables: dict[EdgeMap, pywraplp.Variable] = dict()
+        self.g = g
+        self.h = h
         self.g_edges = g_edges
         self.h_edges = h_edges
+        self.names = names
         self.mapping_costs = mapping_costs
         self._solver: pywraplp.Solver = pywraplp.Solver.CreateSolver(Config().solver_engine)
         self._objective: pywraplp.Objective = self._solver.Objective()
-        self.transform_labels = transform_labels
 
     def infinity(self) -> float:
         return self._solver.Infinity()
