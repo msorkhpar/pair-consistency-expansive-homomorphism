@@ -110,7 +110,7 @@ if __name__ == '__main__':
     second_normalized_col = df_normalized[df_normalized.columns[2]]
     third_normalized_col = df_normalized[df_normalized.columns[3]]
 
-    new_column = 0.4 * first_normalized_col + 0.25 * second_normalized_col + 0.35 * abs(
+    new_column = 0.25 * first_normalized_col + 0.35 * second_normalized_col + 0.4 * abs(
         second_normalized_col - third_normalized_col)
     df_normalized['Score'] = round(new_column, 2)
     df_normalized.sort_values(by='Score', ascending=True, inplace=True)
