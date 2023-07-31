@@ -9,6 +9,7 @@ from ortools.linear_solver import pywraplp
 from lp.parameters import Parameters, EdgeMap, Edge
 from lp.solution import Solution
 from lp.variables.mapping_variables import create_edges_mapping_variables
+from lp.constraints.const0 import const0
 from lp.constraints.const1 import const1
 from lp.constraints.const2 import const2
 from lp.objectives.minimize_distance import minimize_distance
@@ -51,6 +52,7 @@ class Solver:
 
     def _set_up_constraints(self):
         logger.debug("Setting up constraints initiated")
+        const0(self.parameters)
         const1(self.parameters)
         const2(self.parameters)
         logger.debug("Setting up constraints finished")
