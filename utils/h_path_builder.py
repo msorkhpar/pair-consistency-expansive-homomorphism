@@ -78,10 +78,14 @@ def __generate_permutations_with_duplicates(elements, length, current=None):
     return permutations
 
 
-def build_degree_two_paths(h: nx.Graph) -> list[tuple[tuple[int, int], tuple[int, int]]]:
+def build_degree_two_paths(h: nx.Graph) -> dict[tuple[tuple[int, int], tuple[int, int]], float]:
     paths = _find_paths(h)
-    h_pairs = []
+    h_pairs_paths = []
     for key, path in paths.items():
-        h_pairs.extend(__generate_permutations_with_duplicates(path, 2))
+        h_pairs_paths.extend(__generate_permutations_with_duplicates(path, 2))
+    h_pairs = {}
+    for i, j in h_pairs_paths:
+        weight = nx.shortest_path_length(h, i, j,weight="weight")
+        h_pairs[(i, j)] = weight
 
     return h_pairs

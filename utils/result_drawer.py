@@ -177,9 +177,22 @@ def __draw_mapping(output, mappings: dict[EdgeMap, dict[str, float]], names: dic
         uv = mapping.e1
         ij = mapping.e2
 
-        # __drawline(output, (u_x, u_y), (i_x, i_y), (0, 0, 0), 1, gap=35)
-        # __drawline(output, (v_x, v_y), (j_x, j_y), (0, 0, 0), 1, gap=35)
-       #__drawline(output, (center_uv_x, center_uv_y), (center_ij_x, center_ij_y), (0, 0, 0), 1)
+        u_x, u_y = uv.v1
+        v_x, v_y = uv.v2
+
+        i_x, i_y = ij.v1
+        j_x, j_y = ij.v2
+
+        i_x += x_padding
+        j_x += x_padding
+        u_y += y_padding
+        v_y += y_padding
+        i_y += y_padding
+        j_y += y_padding
+
+        __drawline(output, (u_x, u_y), (i_x, i_y), (0, 0, 0), 1, gap=35)
+        __drawline(output, (v_x, v_y), (j_x, j_y), (0, 0, 0), 1, gap=35)
+        # __drawline(output, (center_uv_x, center_uv_y), (center_ij_x, center_ij_y), (0, 0, 0), 1)
         text = (
             f"{names[uv.v1]}{names[uv.v2]}->{names[ij.v1]}{names[ij.v2]}= {round(mappings[mapping]['cost'], 2)}  "
             # f"[L={round(mappings[mapping]['length'], 2)}, A={round(mappings[mapping]['angle'], 2)},"
