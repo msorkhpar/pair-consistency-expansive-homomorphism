@@ -10,12 +10,13 @@ def __check_constraint_rule(parameters: Parameters, uv: Edge):
     for w in parameters.g.neighbors(u):
         if w != v:
             uw = Edge((u, w))
-            for ij in parameters.h_edges:
-                for st in parameters.h_edges:
-                    if ij.v1 != st.v1:
-                        parameters.add_constraint_rule(
-                            parameters.variable(uv, ij) + parameters.variable(uw, st) <= 1
-                        )
+            for ij in parameters.h_edge_pairs:
+                for st in parameters.h_edge_pairs:
+                    pass
+                    # if ij.v1 != st.v1:
+                    #     parameters.add_constraint_rule(
+                    #         parameters.variable(uv, ij) + parameters.variable(uw, st) <= 1
+                    #     )
 
 
 def const2(parameters: Parameters):

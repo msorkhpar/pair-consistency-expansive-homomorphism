@@ -71,16 +71,23 @@ class EdgeMap:
 
 
 class Parameters:
-    def __init__(self, g: nx.Graph, h: nx.gnr_graph, g_edges: list[Edge], h_edges: list[Edge],
+    def __init__(self, g: nx.Graph, h: nx.gnr_graph, g_edges: list[Edge],
+                 h_edge_pairs: list[Edge],
                  mapping_costs: dict[EdgeMap, dict[str, float]]):
         self.variables: dict[EdgeMap, pywraplp.Variable] = dict()
         self.g = g
         self.h = h
         self.g_edges = g_edges
-        self.h_edges = h_edges
+        self.h_edge_pairs = h_edge_pairs
         self.mapping_costs = mapping_costs
         self._solver: pywraplp.Solver = pywraplp.Solver.CreateSolver(Config().solver_engine)
         self._objective: pywraplp.Objective = self._solver.Objective()
+        self.h_edge_pairs_dict: dict[tuple[int, int], set[Edge]] = dict()
+        for e in h_edge_pairs:
+            if e.v1 not in self.h_edge_pairs_dict:
+                self.h_edge_pairs_dict[e.v1] = {e}
+            else:
+                self.h_edge_pairs_dict[e.v1].add(e)
 
     def infinity(self) -> float:
         return self._solver.Infinity()

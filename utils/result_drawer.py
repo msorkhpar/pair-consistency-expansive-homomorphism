@@ -177,35 +177,15 @@ def __draw_mapping(output, mappings: dict[EdgeMap, dict[str, float]], names: dic
         uv = mapping.e1
         ij = mapping.e2
 
-        u_x, u_y = uv.v1
-        v_x, v_y = uv.v2
-        center_uv_x = (u_x + v_x) // 2
-        center_uv_y = (u_y + v_y) // 2
-
-        i_x, i_y = ij.v1
-        j_x, j_y = ij.v2
-        center_ij_x = (i_x + j_x) // 2
-        center_ij_y = (i_y + j_y) // 2
-
-        i_x += x_padding
-        j_x += x_padding
-        u_y += y_padding
-        v_y += y_padding
-        i_y += y_padding
-        j_y += y_padding
-        center_uv_x += x_padding
-        center_uv_y += y_padding
-        center_ij_x += x_padding
-        center_ij_y += y_padding
-
         # __drawline(output, (u_x, u_y), (i_x, i_y), (0, 0, 0), 1, gap=35)
         # __drawline(output, (v_x, v_y), (j_x, j_y), (0, 0, 0), 1, gap=35)
-        __drawline(output, (center_uv_x, center_uv_y), (center_ij_x, center_ij_y), (0, 0, 0), 1)
+       #__drawline(output, (center_uv_x, center_uv_y), (center_ij_x, center_ij_y), (0, 0, 0), 1)
         text = (
             f"{names[uv.v1]}{names[uv.v2]}->{names[ij.v1]}{names[ij.v2]}= {round(mappings[mapping]['cost'], 2)}  "
-            f"[L={round(mappings[mapping]['length'], 2)}, A={round(mappings[mapping]['angle'], 2)},"
-            f" Z={round(mappings[mapping]['distance'], 2)}, D={round(mappings[mapping]['direction'], 2)}, "
-            f"O={round(mappings[mapping]['orientation'], 2)}]")
+            # f"[L={round(mappings[mapping]['length'], 2)}, A={round(mappings[mapping]['angle'], 2)},"
+            # f" Z={round(mappings[mapping]['distance'], 2)}, D={round(mappings[mapping]['direction'], 2)}, "
+            # f"O={round(mappings[mapping]['orientation'], 2)}]"
+        )
         total_cost += mappings[mapping]['cost']
         cv2.putText(output, text, (1050, 30 + counter * 50 + y_padding), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 0),
                     2, cv2.LINE_AA, False)

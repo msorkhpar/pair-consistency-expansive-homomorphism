@@ -16,6 +16,7 @@ from lp.solver import Solver
 from similarity_check.eigenvector_similarity import similarity
 from utils.assign_weight_to_edges import assign_edge_weights
 from utils.config import Config
+from utils.h_path_builder import build_degree_two_paths
 from utils.nxgraph_reader import construct_nxgraph
 from utils.result_drawer import draw_LP_result
 
@@ -33,7 +34,7 @@ if __name__ == '__main__':
     logger = logging.getLogger(__name__)
 
     logger.info(f"Loaded configurations:{config}")
-    output_path = "./output2"
+    output_path = "./output"
     shutil.rmtree(output_path, ignore_errors=True)
     os.makedirs(output_path)
 
@@ -52,13 +53,15 @@ if __name__ == '__main__':
             undirected_H = construct_nxgraph(h_adjlist_path)
             assign_edge_weights(undirected_H)
 
-            starting_similarity_value = similarity(undirected_G, undirected_H)
+            starting_similarity_value_g_to_h = similarity(undirected_G, undirected_H)
+            # starting_similarity_value_h_to_g = similarity(undirected_H, undirected_)
 
             logger.info(f"Running against {h_name}")
+            h_edge_pairs = [Edge((i, j)) for i, j in build_degree_two_paths(undirected_H)]
 
-            g_to_h_costs = calculate_mapping_cost(G, H, alpha, beta, gamma, delta, tau)
-            calculate_self_loop_cost(G, H, g_to_h_costs, gamma)
-            solver_g_to_h_solver = Solver(G, H, g_to_h_costs)
+            g_to_h_costs = calculate_mapping_cost(G, H, h_edge_pairs, alpha, beta, gamma, delta, tau)
+            # calculate_self_loop_cost(G, H, g_to_h_costs, gamma)
+            solver_g_to_h_solver = Solver(G, H, h_edge_pairs, g_to_h_costs)
             g_to_h = solver_g_to_h_solver.solve()
             logger.info(g_to_h)
             solver_g_to_h_solver.clear()
@@ -83,7 +86,7 @@ if __name__ == '__main__':
             result.append([
                 h_name,
                 round(g_to_h.cost / 2, 1),
-                round(starting_similarity_value, 1),
+                round(starting_similarity_value_g_to_h, 1),
                 round(similarity_value, 1)
             ])
 
@@ -110,10 +113,10 @@ if __name__ == '__main__':
     second_normalized_col = df_normalized[df_normalized.columns[2]]
     third_normalized_col = df_normalized[df_normalized.columns[3]]
 
-    new_column = 0.25 * first_normalized_col + 0.35 * second_normalized_col + 0.4 * abs(
+    new_column = 0.3 * first_normalized_col + 0.3 * second_normalized_col + 0.4 * abs(
         second_normalized_col - third_normalized_col)
-    df_normalized['Score'] = round(new_column, 2)
-    df_normalized.sort_values(by='Score', ascending=True, inplace=True)
+    df_normalized['Score'] = 1 - round(new_column, 2)
+    df_normalized.sort_values(by='Score', ascending=False, inplace=True)
 
     # Step 4: Save the normalized DataFrame to a new CSV file
     df_normalized.to_csv(f"{output_path}/normalized_result.csv", index=False)

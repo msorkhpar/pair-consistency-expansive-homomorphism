@@ -15,6 +15,8 @@ from lp.constraints.const2 import const2
 from lp.objectives.minimize_distance import minimize_distance
 from utils.config import Config
 
+from utils.h_path_builder import build_degree_two_paths
+
 logger = logging.getLogger(__name__)
 
 
@@ -30,17 +32,12 @@ class Solver:
             counter = self._assign_name_to_node(names, counter, node)
         return counter
 
-    def __init__(self, g: nx.Graph, h: nx.Graph, mapping_costs: dict[EdgeMap, dict[str, float]]):
+    def __init__(self, g: nx.Graph, directed_h: nx.Graph, h_edge_pairs: list[Edge],
+                 mapping_costs: dict[EdgeMap, dict[str, float]]):
         self.start = time.time()
         self.mapping_costs = mapping_costs
         g_edges = [Edge(uv) for uv in g.edges()]
-        h_edges = [Edge(ij) for ij in h.edges()]
-        #h_edges += [Edge((i, i)) for i in h.nodes()]
-        counter = 97
-        names = {}
-        counter = self.__assign_names_to_nodes(names, counter, g)
-        counter = self.__assign_names_to_nodes(names, counter, h)
-        self.parameters = Parameters(g, h, g_edges, h_edges, mapping_costs)
+        self.parameters = Parameters(g, directed_h, g_edges, h_edge_pairs, mapping_costs)
         self._create_variables()
         self._set_up_constraints()
         self._set_objective()

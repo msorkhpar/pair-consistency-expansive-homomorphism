@@ -19,20 +19,20 @@ def _total_length(G: nx.Graph):
 
 
 def _calculate_uv_ij_cost(total_G_length, total_H_length, max_distance, alpha, beta, gamma, delta, tau, uv, ij):
-    length =1# round(length_cost(alpha, total_G_length, total_H_length, uv.v1, uv.v2, ij.v1, ij.v2), 1)
-    angle = 1#round(angle_cost(beta, uv.v1, uv.v2, ij.v1, ij.v2), 1)
+    length = 1  # round(length_cost(alpha, total_G_length, total_H_length, uv.v1, uv.v2, ij.v1, ij.v2), 1)
+    angle = 1  # round(angle_cost(beta, uv.v1, uv.v2, ij.v1, ij.v2), 1)
     distance = round(distance_cost(gamma, max_distance, uv.v1, uv.v2, ij.v1, ij.v2), 1)
-    direction = 1# round(direction_cost(delta, uv.v1, uv.v2, ij.v1, ij.v2), 1)
-    orientation = 1#round(orientation_cost(tau, uv.v1, uv.v2, ij.v1, ij.v2), 1)
+    direction = 1  # round(direction_cost(delta, uv.v1, uv.v2, ij.v1, ij.v2), 1)
+    orientation = 1  # round(orientation_cost(tau, uv.v1, uv.v2, ij.v1, ij.v2), 1)
 
     return {
         "cost": round(
             (
-                    #length +
-                    #angle +
+                # length +
+                # angle +
                     distance +
-                    #direction +
-                    #orientation +
+                    # direction +
+                    # orientation +
                     0
             ), 3),
         "length": length,
@@ -43,14 +43,15 @@ def _calculate_uv_ij_cost(total_G_length, total_H_length, max_distance, alpha, b
     }
 
 
-def calculate_mapping_cost(G: nx.Graph, H: nx.Graph, alpha, beta, gamma, delta, tau) -> dict[EdgeMap, dict[str, float]]:
+def calculate_mapping_cost(G: nx.Graph, H: nx.Graph, H_edge_pairs: list[Edge], alpha, beta, gamma, delta, tau) -> dict[
+    EdgeMap, dict[str, float]]:
     result: dict[[EdgeMap, dict[str, float]]] = dict()
     max_distance = calculate_max_pair_distance(G, H)
     total_G_length = _total_length(G)
     total_H_length = _total_length(H)
 
     for uv in [Edge(e) for e in G.edges()]:
-        for ij in [Edge(e2) for e2 in H.edges()]:
+        for ij in H_edge_pairs:
             result.update(
                 {
                     EdgeMap(uv, ij):
