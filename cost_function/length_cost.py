@@ -17,7 +17,7 @@ def length_cost(beta, total_g_length, total_h_length, min_h_length, uv_length, i
     h_length = ij_length / total_h_length * 1
 
     if i == j and ij_length == 0:
-        probability = probability_cost_function(g_length, (min_h_length / total_h_length)) / 2
+        probability = probability_cost_function(g_length, (min_h_length / total_h_length))
     else:
         probability = probability_cost_function(g_length, h_length)
     cost = 1 - probability
