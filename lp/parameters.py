@@ -15,9 +15,10 @@ logger = logging.getLogger(__name__)
 
 
 class NodePair:
-    def __init__(self, vertex_tuple: tuple[tuple[int, int], tuple[int, int]], length: float = None):
+    def __init__(self, vertex_tuple: tuple[tuple[int, int], tuple[int, int]], length: float = None, path=None):
         v1, v2 = vertex_tuple
         self.length = length
+        self.path = path
         if length is None:
             self.length = math.dist(v1, v2)
         self.v1: tuple[int, int] = v1

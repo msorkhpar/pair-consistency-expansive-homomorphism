@@ -91,7 +91,7 @@ def __build_path_graph(path: list[tuple[int, int]]) -> tuple[nx.Graph, float]:
     return path_graph, total_weight
 
 
-def build_degree_two_paths(h: nx.Graph) -> dict[tuple[tuple[int, int], tuple[int, int]], float]:
+def build_degree_two_paths(h: nx.Graph) -> dict[tuple[tuple[int, int], tuple[int, int]], dict[str, any]]:
     paths = _find_paths(h)
     h_pairs = {}
 
@@ -102,8 +102,10 @@ def build_degree_two_paths(h: nx.Graph) -> dict[tuple[tuple[int, int], tuple[int
         for i, j in node_pairs:
             if i == j and is_a_cycle:
                 length = path_weight
+                p = [i, i]
             else:
                 length = nx.shortest_path_length(path_graph, i, j, weight="weight")
-            h_pairs[(i, j)] = length
+                p = nx.shortest_path(path_graph, i, j, weight="weight")
+            h_pairs[(i, j)] = {"length": length, "path": p}
 
     return h_pairs

@@ -195,7 +195,7 @@ def __draw_mapping(output, mappings: dict[EdgeMap, dict[str, float]], names: dic
         # __drawline(output, (center_uv_x, center_uv_y), (center_ij_x, center_ij_y), (0, 0, 0), 1)
         text = (
             f"{names[uv.v1]}{names[uv.v2]}->{names[ij.v1]}{names[ij.v2]}= {mappings[mapping]['cost']}  "
-            f"[ 0.7 * D={round(mappings[mapping]['distance'], 5)}, 0.3 * L={round(mappings[mapping]['length'], 5)} ]"
+            f"[ 0.6 * D={round(mappings[mapping]['distance'], 5)}, 0.4 * L={round(mappings[mapping]['length'], 5)} ]"
             f""
         )
         total_cost += mappings[mapping]['cost']
@@ -221,7 +221,8 @@ def __assign_names_to_nodes(names, counter, graph: nx.Graph):
 
 def draw_LP_result(G: nx.Graph, H: nx.Graph, output_path: str,
                    g_to_h_mappings: dict[EdgeMap, dict[str, float]],
-                   h_to_g_mappings: dict[EdgeMap, dict[str, float]] = None):
+                   h_to_g_mappings: dict[EdgeMap, dict[str, float]] = None,
+                   I: nx.Graph = None, I_prime: nx.Graph = None):
     counter = 97
     names = {}
     counter = __assign_names_to_nodes(names, counter, G)
@@ -235,12 +236,12 @@ def draw_LP_result(G: nx.Graph, H: nx.Graph, output_path: str,
         second_output = np.ones((2148, 1024 + 900, 3), np.uint8) * 255
 
     __draw_graph(main_output, G, names, 0, 0)
-    __draw_graph(second_output, H, names, 0, 0)
+    __draw_graph(second_output, I, names, 0, 0)
     __draw_mapping(second_output, g_to_h_mappings, names, 0, 0)
 
     if h_to_g_mappings:
         __draw_graph(main_output, G, names, 0, 1124)
-        __draw_graph(second_output, H, names, 0, 1124)
+        __draw_graph(second_output, I_prime, names, 0, 1124)
         __draw_mapping(second_output, h_to_g_mappings, names, 0, 1124)
 
     output = cv2.addWeighted(main_output, 0.25, second_output, 0.75, 0)

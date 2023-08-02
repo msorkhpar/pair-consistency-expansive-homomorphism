@@ -20,9 +20,51 @@ from utils.h_path_builder import build_degree_two_paths
 from utils.nxgraph_reader import construct_nxgraph
 from utils.result_drawer import draw_LP_result
 
+logger = logging.getLogger(__name__)
+alpha = 0.6  # distance
+beta = 0.4  # length
+
+
+def __graph_to_image(u_h, mappings) -> nx.Graph:
+    h_edge_pairs = {(i, j): NodePair((i, j), data["length"], data["path"]) for (i, j), data in
+                    build_degree_two_paths(u_h).items()}
+    graph_to_h_image = nx.Graph()
+    for key in mappings.keys():
+        u, v, i, j = key.e1.v1, key.e1.v2, key.e2.v1, key.e2.v2
+        path = h_edge_pairs[(i, j)].path
+        for n_index in range(len(path) - 1):
+            weight = h_edge_pairs[(i, j)].length
+            if graph_to_h_image.has_edge(path[n_index], path[n_index + 1]):
+                graph_to_h_image[path[n_index]][path[n_index + 1]]["weight"] += weight
+            else:
+                graph_to_h_image.add_edge(path[n_index], path[n_index + 1], weight=weight)
+
+    return graph_to_h_image
+
+
+def __compare(dg, d_l_h, u_h):
+    h_edge_pairs = {(i, j): NodePair((i, j), data["length"], data["path"]) for (i, j), data in
+                    build_degree_two_paths(u_h).items()}
+
+    g_to_h_costs: dict[EdgeMap, dict[str, float]] = calculate_mapping_cost(dg, d_l_h, list(h_edge_pairs.values()),
+                                                                           alpha, beta)
+    solver_g_to_h_solver = Solver(dg, d_l_h, list(h_edge_pairs.values()), g_to_h_costs)
+    g_to_h = solver_g_to_h_solver.solve()
+    logger.info(g_to_h)
+    solver_g_to_h_solver.clear()
+
+    mappings = {}
+    for key in g_to_h.variables.keys():
+        u, v, i, j = key.e1.v1, key.e1.v2, key.e2.v1, key.e2.v2
+        dual_key = EdgeMap(NodePair((v, u)), NodePair((j, i)))
+        if mappings.get(dual_key) is None:
+            mappings[key] = g_to_h_costs[key]
+    return mappings, g_to_h.cost
+
+
 if __name__ == '__main__':
-    alpha = 0.7  # distance
-    beta = 0.3  # length
+    alpha = 0.6  # distance
+    beta = 0.4  # length
 
     config = Config()
     logging.basicConfig(format='%(asctime)s %(levelname)s:%(name)s:%(funcName)s:%(message)s',
@@ -35,9 +77,10 @@ if __name__ == '__main__':
     shutil.rmtree(output_path, ignore_errors=True)
     os.makedirs(output_path)
 
-    G = construct_nxgraph(config.g_graph_path, type=nx.DiGraph)
-    undirected_G = construct_nxgraph(config.g_graph_path)
-    assign_edge_weights(undirected_G)
+    directed_g = construct_nxgraph(config.g_graph_path, type=nx.DiGraph)
+    directed_loop_g = construct_nxgraph(config.g_graph_path, type=nx.DiGraph, add_self_loops=True)
+    undirected_g = construct_nxgraph(config.g_graph_path)
+    assign_edge_weights(undirected_g)
 
     result = []
     counter = 0
@@ -46,72 +89,81 @@ if __name__ == '__main__':
             counter += 1
             h_adjlist_path = os.path.join(root, h_adjlist)
             h_name = h_adjlist.split(".")[0]
-            H = construct_nxgraph(h_adjlist_path, type=nx.DiGraph, add_self_loops=True)
-            undirected_H = construct_nxgraph(h_adjlist_path)
-            assign_edge_weights(undirected_H)
+            directed_loop_h = construct_nxgraph(h_adjlist_path, type=nx.DiGraph, add_self_loops=True)
+            directed_h = construct_nxgraph(h_adjlist_path, type=nx.DiGraph)
+            undirected_h = construct_nxgraph(h_adjlist_path)
+            assign_edge_weights(undirected_h)
+            # g_with_h_similarity = similarity(undirected_g, undirected_h)
 
-            starting_similarity_value_g_to_h = similarity(undirected_G, undirected_H)
-            # starting_similarity_value_h_to_g = similarity(undirected_H, undirected_)
+            g_to_h_mappings, g_to_h_cost = __compare(directed_g, directed_loop_h, undirected_h)
+            i_graph = __graph_to_image(undirected_h, g_to_h_mappings)
+            # h_with_i_similarity = __graph_to_image_similarity(undirected_h, g_to_h_mappings)
 
-            logger.info(f"Running against {h_name}")
-            h_edge_pairs = [NodePair((i, j), length) for (i, j), length in build_degree_two_paths(undirected_H).items()]
+            h_to_g_mappings, h_to_g_cost = __compare(directed_h, directed_loop_g, undirected_g)
+            i_prime_graph = __graph_to_image(undirected_g, h_to_g_mappings)
 
-            g_to_h_costs: dict[EdgeMap, dict[str, float]] = calculate_mapping_cost(G, H, h_edge_pairs, alpha, beta)
-            solver_g_to_h_solver = Solver(G, H, h_edge_pairs, g_to_h_costs)
-            g_to_h = solver_g_to_h_solver.solve()
-            logger.info(g_to_h)
-            solver_g_to_h_solver.clear()
+            # g_with_i_prime_similarity = __graph_to_image_similarity(undirected_g, h_to_g_mappings)
+            # h_with_i_prime_similarity = __graph_to_image_similarity(undirected_h, h_to_g_mappings)
 
-            winner_costs_g_to_h = {}
-            for key in g_to_h.variables.keys():
-                u, v, i, j = key.e1.v1, key.e1.v2, key.e2.v1, key.e2.v2
-                dual_key = EdgeMap(NodePair((v, u)), NodePair((j, i)))
-                if winner_costs_g_to_h.get(dual_key) is None:
-                    winner_costs_g_to_h[key] = g_to_h_costs[key]
+            draw_LP_result(undirected_g, undirected_h, os.path.join(output_path, f"{h_name}.png"), g_to_h_mappings,
+                           h_to_g_mappings, i_graph, i_prime_graph)
 
-            draw_LP_result(G, H, os.path.join(output_path, f"{h_name}.png"), winner_costs_g_to_h)
+            #h_g_h_sim = similarity(undirected_h, i_graph)
+            #h_h_to_g_sim = similarity(undirected_g, i_prime_graph)
+            i_with_i_prime_similarity = similarity(i_graph, i_prime_graph)
+            result.append(
+                [
+                    h_name,
+                    round(g_to_h_cost, 2),
+                    round(h_to_g_cost, 2),
+                    0,#h_g_h_sim,
+                    0,#h_h_to_g_sim,
+                    i_with_i_prime_similarity
+                    # round(g_with_h_similarity, 2),
+                    # round(g_with_i_similarity, 2),
+                    # round(h_with_i_similarity, 2),
+                    # round(g_with_i_prime_similarity, 2),
+                    # round(h_with_i_prime_similarity, 2)
+                ]
+            )
 
-            mapped_subgraph = nx.Graph()
-            for key in winner_costs_g_to_h.keys():
-                u, v, i, j = key.e1.v1, key.e1.v2, key.e2.v1, key.e2.v2
-                mapped_subgraph.add_edge(i, j)
-
-            assign_edge_weights(mapped_subgraph)
-            similarity_value = similarity(undirected_G, mapped_subgraph)
-
-            result.append([
-                h_name,
-                round(g_to_h.cost, 2),
-                round(starting_similarity_value_g_to_h, 2),
-                round(similarity_value, 2)
-            ])
-
+    columns = [
+        f"{config.g_graph_path} Against H_name", "Cost_LP(G,H)", "Cost_LP(H,G)",
+        "Sim(H_g_h & I)",
+        "Sim(H_h_g & I')",
+        "Sim(I & I')"
+        # "Sim(G & H)", "Sim(G & I)", "Sim(H & I)","Sim(G & I')", "Sim(H & I')"
+    ]
     with open(os.path.join(output_path, "result.csv"), 'w') as file:
         writer = csv.writer(file)
-        writer.writerow(
-            ["Name of the target file", "G to H LP cost", "G&H similarity", "G&I Similarity Value"])
+        writer.writerow(columns)
         writer.writerows(result)
 
-    input_file = f"{output_path}/result.csv"
-    df = pd.read_csv(input_file)
+    df = pd.DataFrame(result, columns=columns)
 
-    # Step 2: Normalize each column based on its maximum value
     df_normalized = df.copy()
     for column in df_normalized.columns[1:]:
-        max = df_normalized[column].max()
-        if max == 0:
+        max_value = df_normalized[column].max()
+        if max_value == 0:
             df_normalized[column] = 0
         else:
-            df_normalized[column] = round(df_normalized[column] / df_normalized[column].max(), 2)
+            df_normalized[column] = round(df_normalized[column] / max_value, 2)
 
-    first_normalized_col = df_normalized[df_normalized.columns[1]]
-    second_normalized_col = df_normalized[df_normalized.columns[2]]
-    third_normalized_col = df_normalized[df_normalized.columns[3]]
+    lp_g_h_c = df_normalized[df_normalized.columns[1]]
+    lp_h_g_c = df_normalized[df_normalized.columns[2]]
+    #h_g_h_sim = df_normalized[df_normalized.columns[3]]
+    #h_h_to_g_sim = df_normalized[df_normalized.columns[4]]
+    s_i_i_prime = df_normalized[df_normalized.columns[5]]
+    # s_g_h = df_normalized[df_normalized.columns[3]]
+    # s_g_i = df_normalized[df_normalized.columns[4]]
+    # s_h_i = df_normalized[df_normalized.columns[5]]
+    # s_g_i_prime = df_normalized[df_normalized.columns[6]]
+    # s_h_i_prime = df_normalized[df_normalized.columns[7]]
 
-    new_column = 0.2 * first_normalized_col + 0.3 * second_normalized_col + 0.5 * abs(
-        second_normalized_col - third_normalized_col)
-    df_normalized['Score'] = 1 - round(new_column, 2)
+    score = (
+            .5 * s_i_i_prime + #0.2 * h_g_h_sim + 0.2 * h_h_to_g_sim +
+            .25 * (lp_g_h_c) + .25 * (lp_h_g_c))
+    df_normalized['Score'] = 1 - round(score, 3)
     df_normalized.sort_values(by='Score', ascending=False, inplace=True)
 
-    # Step 4: Save the normalized DataFrame to a new CSV file
-    df_normalized.to_csv(f"{output_path}/normalized_result.csv", index=False)
+    df_normalized.to_csv(os.path.join(output_path, "normalized_result.csv"), index=False)
