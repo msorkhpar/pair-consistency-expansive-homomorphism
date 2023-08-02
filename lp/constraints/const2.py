@@ -1,15 +1,15 @@
 import logging
 
-from lp.parameters import Parameters, Edge
+from lp.parameters import Parameters, NodePair
 
 logger = logging.getLogger(__name__)
 
 
-def __check_constraint_rule(parameters: Parameters, uv: Edge):
+def __check_constraint_rule(parameters: Parameters, uv: NodePair):
     u, v = uv
     for w in parameters.g.neighbors(u):
         if w != v:
-            uw = Edge((u, w))
+            uw = NodePair((u, w))
             for ij in parameters.h_edge_pairs:
                 for st in parameters.h_edge_pairs:
                     if ij.v1 != st.v1:

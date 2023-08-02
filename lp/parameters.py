@@ -14,9 +14,12 @@ from utils.config import Config
 logger = logging.getLogger(__name__)
 
 
-class Edge:
-    def __init__(self, vertex_tuple: tuple[tuple[int, int], tuple[int, int]]):
+class NodePair:
+    def __init__(self, vertex_tuple: tuple[tuple[int, int], tuple[int, int]], length: float = None):
         v1, v2 = vertex_tuple
+        self.length = length
+        if length is None:
+            self.length = math.dist(v1, v2)
         self.v1: tuple[int, int] = v1
         self.v2: tuple[int, int] = v2
 
@@ -24,7 +27,7 @@ class Edge:
         return f"[{self.v1}|{self.v2}]"
 
     def __eq__(self, other):
-        if not isinstance(other, Edge):
+        if not isinstance(other, NodePair):
             return False
         return self.v1 == other.v1 and self.v2 == other.v2
 
@@ -32,24 +35,24 @@ class Edge:
         return hash((self.v1, self.v2))
 
     @staticmethod
-    def from_index(index: str) -> Edge:
+    def from_index(index: str) -> NodePair:
         u, v = index[1:-1].split("|")
         u = u[1:-1].split(",")
         u = (int(u[0]), int(u[1]))
         v = v[1:-1].split(",")
         v = (int(v[0]), int(v[1]))
-        return Edge((u, v))
+        return NodePair((u, v))
 
 
 class EdgeMap:
-    def __init__(self, e1: Edge | tuple[tuple[int, int], tuple[int, int]],
-                 e2: Edge | tuple[tuple[int, int], tuple[int, int]]):
+    def __init__(self, e1: NodePair | tuple[tuple[int, int], tuple[int, int]],
+                 e2: NodePair | tuple[tuple[int, int], tuple[int, int]]):
         if isinstance(e1, tuple):
-            self.e1 = Edge(e1)
+            self.e1 = NodePair(e1)
         else:
             self.e1 = e1
         if isinstance(e2, tuple):
-            self.e1 = Edge(e2)
+            self.e1 = NodePair(e2)
         else:
             self.e2 = e2
 
@@ -67,12 +70,12 @@ class EdgeMap:
     @staticmethod
     def from_index(index: str) -> EdgeMap:
         e1, e2 = index[1:-1].split("->")
-        return EdgeMap(Edge.from_index(e1), Edge.from_index(e2))
+        return EdgeMap(NodePair.from_index(e1), NodePair.from_index(e2))
 
 
 class Parameters:
-    def __init__(self, g: nx.Graph, h: nx.gnr_graph, g_edges: list[Edge],
-                 h_edge_pairs: list[Edge],
+    def __init__(self, g: nx.Graph, h: nx.gnr_graph, g_edges: list[NodePair],
+                 h_edge_pairs: list[NodePair],
                  mapping_costs: dict[EdgeMap, dict[str, float]]):
         self.variables: dict[EdgeMap, pywraplp.Variable] = dict()
         self.g = g
@@ -82,7 +85,7 @@ class Parameters:
         self.mapping_costs = mapping_costs
         self._solver: pywraplp.Solver = pywraplp.Solver.CreateSolver(Config().solver_engine)
         self._objective: pywraplp.Objective = self._solver.Objective()
-        self.h_edge_pairs_dict: dict[tuple[int, int], set[Edge]] = dict()
+        self.h_edge_pairs_dict: dict[tuple[int, int], set[NodePair]] = dict()
         for e in h_edge_pairs:
             if e.v1 not in self.h_edge_pairs_dict:
                 self.h_edge_pairs_dict[e.v1] = {e}
@@ -92,7 +95,7 @@ class Parameters:
     def infinity(self) -> float:
         return self._solver.Infinity()
 
-    def variable(self, e1: Edge, e2: Edge) -> pywraplp.Variable | None:
+    def variable(self, e1: NodePair, e2: NodePair) -> pywraplp.Variable | None:
         mapping = EdgeMap(e1, e2)
         if mapping not in self.variables:
             return None
@@ -107,7 +110,7 @@ class Parameters:
     def variables_num(self) -> int:
         return self._solver.NumVariables()
 
-    def add_variable(self, e1: Edge, e2: Edge, lower_bound: float = 0.0, upper_bound: float = 1.0):
+    def add_variable(self, e1: NodePair, e2: NodePair, lower_bound: float = 0.0, upper_bound: float = 1.0):
         mapping = EdgeMap(e1, e2)
         self.variables[mapping] = self._solver.NumVar(lower_bound, upper_bound, mapping.__str__())
 

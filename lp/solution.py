@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from lp.parameters import Parameters, EdgeMap, Edge
+from lp.parameters import Parameters, EdgeMap, NodePair
 import logging
 
 logger = logging.getLogger(__name__)
@@ -32,6 +32,6 @@ class Solution:
         for mapping, value in self.variables.items():
             uv = mapping.e1
             ij = mapping.e2
-            new_mapping = EdgeMap(Edge((g_labels[uv.v1], g_labels[uv.v2])), Edge((h_labels[ij.v1], h_labels[ij.v2])))
+            new_mapping = EdgeMap(NodePair((g_labels[uv.v1], g_labels[uv.v2])), NodePair((h_labels[ij.v1], h_labels[ij.v2])))
             result[new_mapping] = value
         self.variables = result

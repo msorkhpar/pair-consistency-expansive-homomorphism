@@ -122,7 +122,7 @@ import networkx as nx
 import numpy as np
 import cv2
 
-from lp.parameters import EdgeMap, Edge
+from lp.parameters import EdgeMap, NodePair
 
 
 def __draw_graph(output, graph: nx.Graph, names: dict[tuple[int, int], str], x_padding=0, y_padding=0):
@@ -194,10 +194,9 @@ def __draw_mapping(output, mappings: dict[EdgeMap, dict[str, float]], names: dic
         __drawline(output, (v_x, v_y), (j_x, j_y), (0, 0, 0), 1, gap=35)
         # __drawline(output, (center_uv_x, center_uv_y), (center_ij_x, center_ij_y), (0, 0, 0), 1)
         text = (
-            f"{names[uv.v1]}{names[uv.v2]}->{names[ij.v1]}{names[ij.v2]}= {round(mappings[mapping]['cost'], 2)}  "
-            # f"[L={round(mappings[mapping]['length'], 2)}, A={round(mappings[mapping]['angle'], 2)},"
-            # f" Z={round(mappings[mapping]['distance'], 2)}, D={round(mappings[mapping]['direction'], 2)}, "
-            # f"O={round(mappings[mapping]['orientation'], 2)}]"
+            f"{names[uv.v1]}{names[uv.v2]}->{names[ij.v1]}{names[ij.v2]}= {mappings[mapping]['cost']}  "
+            f"[ 0.7 * D={round(mappings[mapping]['distance'], 5)}, 0.3 * L={round(mappings[mapping]['length'], 5)} ]"
+            f""
         )
         total_cost += mappings[mapping]['cost']
         cv2.putText(output, text, (1050, 30 + counter * 50 + y_padding), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 0),

@@ -11,7 +11,7 @@ import logging
 import os
 import shutil
 
-from lp.parameters import EdgeMap, Edge
+from lp.parameters import EdgeMap, NodePair
 from lp.solver import Solver
 from similarity_check.eigenvector_similarity import similarity
 from utils.assign_weight_to_edges import assign_edge_weights
@@ -21,11 +21,8 @@ from utils.nxgraph_reader import construct_nxgraph
 from utils.result_drawer import draw_LP_result
 
 if __name__ == '__main__':
-    alpha = 1  # length
-    beta = 2  # angle
-    gamma = 4  # distance
-    delta = 1  # direction
-    tau = 2  # orientation
+    alpha = 0.7  # distance
+    beta = 0.3  # length
 
     config = Config()
     logging.basicConfig(format='%(asctime)s %(levelname)s:%(name)s:%(funcName)s:%(message)s',
@@ -57,10 +54,9 @@ if __name__ == '__main__':
             # starting_similarity_value_h_to_g = similarity(undirected_H, undirected_)
 
             logger.info(f"Running against {h_name}")
-            h_edge_pairs = [Edge((i, j)) for i, j in build_degree_two_paths(undirected_H)]
+            h_edge_pairs = [NodePair((i, j), length) for (i, j), length in build_degree_two_paths(undirected_H).items()]
 
-            g_to_h_costs = calculate_mapping_cost(G, H, h_edge_pairs, alpha, beta, gamma, delta, tau)
-            # calculate_self_loop_cost(G, H, g_to_h_costs, gamma)
+            g_to_h_costs: dict[EdgeMap, dict[str, float]] = calculate_mapping_cost(G, H, h_edge_pairs, alpha, beta)
             solver_g_to_h_solver = Solver(G, H, h_edge_pairs, g_to_h_costs)
             g_to_h = solver_g_to_h_solver.solve()
             logger.info(g_to_h)
@@ -69,7 +65,7 @@ if __name__ == '__main__':
             winner_costs_g_to_h = {}
             for key in g_to_h.variables.keys():
                 u, v, i, j = key.e1.v1, key.e1.v2, key.e2.v1, key.e2.v2
-                dual_key = EdgeMap(Edge((v, u)), Edge((j, i)))
+                dual_key = EdgeMap(NodePair((v, u)), NodePair((j, i)))
                 if winner_costs_g_to_h.get(dual_key) is None:
                     winner_costs_g_to_h[key] = g_to_h_costs[key]
 
@@ -85,9 +81,9 @@ if __name__ == '__main__':
 
             result.append([
                 h_name,
-                round(g_to_h.cost / 2, 1),
-                round(starting_similarity_value_g_to_h, 1),
-                round(similarity_value, 1)
+                round(g_to_h.cost, 2),
+                round(starting_similarity_value_g_to_h, 2),
+                round(similarity_value, 2)
             ])
 
     with open(os.path.join(output_path, "result.csv"), 'w') as file:
@@ -108,12 +104,11 @@ if __name__ == '__main__':
         else:
             df_normalized[column] = round(df_normalized[column] / df_normalized[column].max(), 2)
 
-    # Step 3: Calculate the new column based on the given formula
     first_normalized_col = df_normalized[df_normalized.columns[1]]
     second_normalized_col = df_normalized[df_normalized.columns[2]]
     third_normalized_col = df_normalized[df_normalized.columns[3]]
 
-    new_column = 0.3 * first_normalized_col + 0.3 * second_normalized_col + 0.4 * abs(
+    new_column = 0.2 * first_normalized_col + 0.3 * second_normalized_col + 0.5 * abs(
         second_normalized_col - third_normalized_col)
     df_normalized['Score'] = 1 - round(new_column, 2)
     df_normalized.sort_values(by='Score', ascending=False, inplace=True)

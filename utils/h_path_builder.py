@@ -1,6 +1,8 @@
+import math
+
 import networkx as nx
 
-from lp.parameters import Edge
+from lp.parameters import NodePair
 
 
 def _find_paths(graph: nx.Graph):
@@ -78,14 +80,30 @@ def __generate_permutations_with_duplicates(elements, length, current=None):
     return permutations
 
 
+def __build_path_graph(path: list[tuple[int, int]]) -> tuple[nx.Graph, float]:
+    path_graph = nx.Graph()
+    total_weight = 0
+    for i in range(len(path) - 1):
+        weight = math.dist(path[i], path[i + 1])
+        path_graph.add_edge(path[i], path[i + 1], weight=weight)
+        total_weight += weight
+
+    return path_graph, total_weight
+
+
 def build_degree_two_paths(h: nx.Graph) -> dict[tuple[tuple[int, int], tuple[int, int]], float]:
     paths = _find_paths(h)
-    h_pairs_paths = []
-    for key, path in paths.items():
-        h_pairs_paths.extend(__generate_permutations_with_duplicates(path, 2))
     h_pairs = {}
-    for i, j in h_pairs_paths:
-        weight = nx.shortest_path_length(h, i, j,weight="weight")
-        h_pairs[(i, j)] = weight
+
+    for key, path in paths.items():
+        path_graph, path_weight = __build_path_graph(path)
+        node_pairs = __generate_permutations_with_duplicates(path, 2)
+        is_a_cycle = (path[0] == path[-1]) & len(path) > 2
+        for i, j in node_pairs:
+            if i == j and is_a_cycle:
+                length = path_weight
+            else:
+                length = nx.shortest_path_length(path_graph, i, j, weight="weight")
+            h_pairs[(i, j)] = length
 
     return h_pairs

@@ -6,7 +6,7 @@ import time
 import networkx as nx
 from ortools.linear_solver import pywraplp
 
-from lp.parameters import Parameters, EdgeMap, Edge
+from lp.parameters import Parameters, EdgeMap, NodePair
 from lp.solution import Solution
 from lp.variables.mapping_variables import create_edges_mapping_variables
 from lp.constraints.const0 import const0
@@ -32,11 +32,11 @@ class Solver:
             counter = self._assign_name_to_node(names, counter, node)
         return counter
 
-    def __init__(self, g: nx.Graph, directed_h: nx.Graph, h_edge_pairs: list[Edge],
+    def __init__(self, g: nx.Graph, directed_h: nx.Graph, h_edge_pairs: list[NodePair],
                  mapping_costs: dict[EdgeMap, dict[str, float]]):
         self.start = time.time()
         self.mapping_costs = mapping_costs
-        g_edges = [Edge(uv) for uv in g.edges()]
+        g_edges = [NodePair(uv) for uv in g.edges()]
         self.parameters = Parameters(g, directed_h, g_edges, h_edge_pairs, mapping_costs)
         self._create_variables()
         self._set_up_constraints()
