@@ -15,7 +15,6 @@ from lp.constraints.const2 import const2
 from lp.objectives.minimize_distance import minimize_distance
 from utils.config import Config
 
-from utils.h_path_builder import build_degree_two_paths
 
 logger = logging.getLogger(__name__)
 

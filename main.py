@@ -21,13 +21,14 @@ from utils.nxgraph_reader import construct_nxgraph
 from utils.result_drawer import draw_LP_result
 
 logger = logging.getLogger(__name__)
-alpha = 0.4  # distance
-beta = 0.6  # length
+alpha = 0.6  # distance
+beta = 0.4  # length
+use_paths = False
 
 
 def __graph_to_image(u_h, mappings) -> nx.Graph:
     h_edge_pairs = {(i, j): NodePair((i, j), data["length"], data["path"]) for (i, j), data in
-                    build_degree_two_paths(u_h).items()}
+                    build_degree_two_paths(u_h, use_paths).items()}
     graph_to_image = nx.Graph()
     for key in mappings.keys():
         u, v, i, j = key.e1.v1, key.e1.v2, key.e2.v1, key.e2.v2
@@ -46,7 +47,7 @@ def __graph_to_image(u_h, mappings) -> nx.Graph:
 
 def __compare(dg, d_l_h, u_h):
     h_edge_pairs = {(i, j): NodePair((i, j), data["length"], data["path"]) for (i, j), data in
-                    build_degree_two_paths(u_h).items()}
+                    build_degree_two_paths(u_h, use_paths).items()}
 
     g_to_h_costs: dict[EdgeMap, dict[str, float]] = calculate_mapping_cost(dg, d_l_h, list(h_edge_pairs.values()),
                                                                            alpha, beta)
@@ -65,8 +66,6 @@ def __compare(dg, d_l_h, u_h):
 
 
 if __name__ == '__main__':
-    alpha = 0.6  # distance
-    beta = 0.4  # length
 
     config = Config()
     logging.basicConfig(format='%(asctime)s %(levelname)s:%(name)s:%(funcName)s:%(message)s',
@@ -130,7 +129,7 @@ if __name__ == '__main__':
             )
 
     columns = [
-        f"'{config.g_graph_path}' Against H_name", "Cost_LP(G,H)", "Cost_LP(H,G)",
+        f"'{config.g_graph_path}' {'to H paths' if use_paths else 'to H edges'}", "Cost_LP(G,H)", "Cost_LP(H,G)",
         "Sim(H & H')", "Sim(G & G')"
         # "Sim(G & H)", "Sim(G & I)", "Sim(H & I)","Sim(G & I')", "Sim(H & I')"
     ]

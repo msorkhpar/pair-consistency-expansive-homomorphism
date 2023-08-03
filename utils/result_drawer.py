@@ -238,7 +238,7 @@ def draw_LP_result(G: nx.Graph, H: nx.Graph, output_path: str,
         second_output = np.ones((2148, 1024 + 900, 3), np.uint8) * 255
 
     __draw_graph(main_output, G, names, 0, 0)
-    __draw_graph(second_output, H, None, 0, 0)
+    __draw_graph(second_output, H, names, 0, 0)
     __draw_graph(second_output, H_prime, names, 1, 1, (0, 0, 255))
     __draw_mapping(second_output, g_to_h_mappings, names, 0, 0)
 
