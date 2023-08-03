@@ -13,6 +13,23 @@ from utils.result_drawer import draw_LP_result
 from cost_function.mapping_cost import calculate_mapping_cost
 
 
+def __graph_to_image(u_h, mappings) -> nx.Graph:
+    h_edge_pairs = {(i, j): NodePair((i, j), data["length"], data["path"]) for (i, j), data in
+                    build_degree_two_paths(u_h).items()}
+    graph_to_h_image = nx.Graph()
+    for key in mappings.keys():
+        u, v, i, j = key.e1.v1, key.e1.v2, key.e2.v1, key.e2.v2
+        path = h_edge_pairs[(i, j)].path
+        for n_index in range(len(path) - 1):
+            weight = h_edge_pairs[(i, j)].length
+            if graph_to_h_image.has_edge(path[n_index], path[n_index + 1]):
+                graph_to_h_image[path[n_index]][path[n_index + 1]]["weight"] += weight
+            else:
+                graph_to_h_image.add_edge(path[n_index], path[n_index + 1], weight=weight)
+
+    return graph_to_h_image
+
+
 def __compare(dg, d_l_h, u_h):
     h_edge_pairs = [NodePair((i, j), data["length"], data["path"]) for (i, j), data in
                     build_degree_two_paths(u_h).items()]
@@ -49,4 +66,6 @@ if __name__ == '__main__':
     undirected_h = construct_nxgraph(config.h_graph_path)
 
     g_to_h_mappings, g_to_h_cost = __compare(directed_g, directed_loop_h, undirected_h)
-    draw_LP_result(directed_g, undirected_h, None, g_to_h_mappings)
+    i_graph = __graph_to_image(undirected_h, g_to_h_mappings)
+
+    draw_LP_result(directed_g, undirected_h, None, g_to_h_mappings, I=i_graph)

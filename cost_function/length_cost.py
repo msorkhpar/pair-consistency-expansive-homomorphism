@@ -4,7 +4,7 @@ import numpy as np
 
 
 # Step 2: Define the Probability Cost Function
-def probability_cost_function(percentage_g, percentage_h, a=25):
+def probability_cost_function(percentage_g, percentage_h, a=5):
     if percentage_h == 0:
         return 1
     if percentage_g / percentage_h > 1.1:

@@ -102,10 +102,12 @@ def build_degree_two_paths(h: nx.Graph) -> dict[tuple[tuple[int, int], tuple[int
         for i, j in node_pairs:
             if i == j and is_a_cycle:
                 length = path_weight
-                p = [i, i]
+                p = path
             else:
                 length = nx.shortest_path_length(path_graph, i, j, weight="weight")
                 p = nx.shortest_path(path_graph, i, j, weight="weight")
+                if len(p) == 1:
+                    p = [i, i]
             h_pairs[(i, j)] = {"length": length, "path": p}
 
     return h_pairs

@@ -125,7 +125,7 @@ import cv2
 from lp.parameters import EdgeMap, NodePair
 
 
-def __draw_graph(output, graph: nx.Graph, names: dict[tuple[int, int], str], x_padding=0, y_padding=0):
+def __draw_graph(output, graph: nx.Graph, names: dict[tuple[int, int], str], x_padding=0, y_padding=0, color=(0, 0, 0)):
     for u, v in graph.edges():
         x1, y1 = u
         x2, y2 = v
@@ -134,14 +134,16 @@ def __draw_graph(output, graph: nx.Graph, names: dict[tuple[int, int], str], x_p
         x2 = (x2 + x_padding)
         y1 = (y1 + y_padding)
         y2 = (y2 + y_padding)
-        cv2.line(output, (x1, y1), (x2, y2), (0, 0, 0), 2)
+        cv2.line(output, (x1, y1), (x2, y2), color, 2)
 
     for x, y in graph.nodes:
         cv2.circle(output, (x, y), 3, (0, 0, 255), -1)
         p_x = (15 if x < 1024 / 3 else -20) + x
         p_y = (22 if y < 1024 / 2 else -15) + y
-        cv2.putText(output, names[(x, y)], (p_x + x_padding, p_y + y_padding), cv2.FONT_HERSHEY_SIMPLEX, 0.9, (0, 0, 0),
-                    2, cv2.LINE_AA, False)
+        if names:
+            cv2.putText(output, names[(x, y)], (p_x + x_padding, p_y + y_padding), cv2.FONT_HERSHEY_SIMPLEX, 0.9,
+                        (0, 0, 0),
+                        2, cv2.LINE_AA, False)
 
 
 def __drawline(img, pt1, pt2, color, thickness=1, style='dotted', gap=10):
@@ -190,8 +192,8 @@ def __draw_mapping(output, mappings: dict[EdgeMap, dict[str, float]], names: dic
         i_y += y_padding
         j_y += y_padding
 
-        __drawline(output, (u_x, u_y), (i_x, i_y), (0, 0, 0), 1, gap=35)
-        __drawline(output, (v_x, v_y), (j_x, j_y), (0, 0, 0), 1, gap=35)
+        # __drawline(output, (u_x, u_y), (i_x, i_y), (0, 0, 0), 1, gap=35)
+        # __drawline(output, (v_x, v_y), (j_x, j_y), (0, 0, 0), 1, gap=35)
         # __drawline(output, (center_uv_x, center_uv_y), (center_ij_x, center_ij_y), (0, 0, 0), 1)
         text = (
             f"{names[uv.v1]}{names[uv.v2]}->{names[ij.v1]}{names[ij.v2]}= {mappings[mapping]['cost']}  "
@@ -222,7 +224,7 @@ def __assign_names_to_nodes(names, counter, graph: nx.Graph):
 def draw_LP_result(G: nx.Graph, H: nx.Graph, output_path: str,
                    g_to_h_mappings: dict[EdgeMap, dict[str, float]],
                    h_to_g_mappings: dict[EdgeMap, dict[str, float]] = None,
-                   I: nx.Graph = None, I_prime: nx.Graph = None):
+                   H_prime: nx.Graph = None, G_prime: nx.Graph = None):
     counter = 97
     names = {}
     counter = __assign_names_to_nodes(names, counter, G)
@@ -236,12 +238,14 @@ def draw_LP_result(G: nx.Graph, H: nx.Graph, output_path: str,
         second_output = np.ones((2148, 1024 + 900, 3), np.uint8) * 255
 
     __draw_graph(main_output, G, names, 0, 0)
-    __draw_graph(second_output, I, names, 0, 0)
+    __draw_graph(second_output, H, None, 0, 0)
+    __draw_graph(second_output, H_prime, names, 1, 1, (0, 0, 255))
     __draw_mapping(second_output, g_to_h_mappings, names, 0, 0)
 
     if h_to_g_mappings:
-        __draw_graph(main_output, G, names, 0, 1124)
-        __draw_graph(second_output, I_prime, names, 0, 1124)
+        __draw_graph(main_output, H, names, 0, 1124)
+        __draw_graph(second_output, G, names, 0, 1124)
+        __draw_graph(second_output, G_prime, names, 1, 1124+1, (0, 0, 255))
         __draw_mapping(second_output, h_to_g_mappings, names, 0, 1124)
 
     output = cv2.addWeighted(main_output, 0.25, second_output, 0.75, 0)
