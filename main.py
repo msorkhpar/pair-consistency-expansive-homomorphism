@@ -1,5 +1,7 @@
 import csv
 import logging
+import math
+
 import networkx as nx
 import pandas as pd
 
@@ -21,12 +23,15 @@ from utils.nxgraph_reader import construct_nxgraph
 from utils.result_drawer import draw_LP_result
 
 logger = logging.getLogger(__name__)
-alpha = 0.6  # distance
-beta = 0.4  # length
-use_paths = False
+alpha = 0.06  # distance
+beta = 0.04  # length
+gamma= 0.01  # eigen
+
+use_path_g_to_h = True
+use_path_h_to_g = True
 
 
-def __graph_to_image(u_h, mappings) -> nx.Graph:
+def __graph_to_image(u_h, mappings, use_paths) -> nx.Graph:
     h_edge_pairs = {(i, j): NodePair((i, j), data["length"], data["path"]) for (i, j), data in
                     build_degree_two_paths(u_h, use_paths).items()}
     graph_to_image = nx.Graph()
@@ -45,7 +50,7 @@ def __graph_to_image(u_h, mappings) -> nx.Graph:
     return graph_to_image
 
 
-def __compare(dg, d_l_h, u_h):
+def __compare(dg, d_l_h, u_h, use_paths):
     h_edge_pairs = {(i, j): NodePair((i, j), data["length"], data["path"]) for (i, j), data in
                     build_degree_two_paths(u_h, use_paths).items()}
 
@@ -96,12 +101,14 @@ if __name__ == '__main__':
             assign_edge_weights(undirected_h)
             # g_with_h_similarity = similarity(undirected_g, undirected_h)
 
-            g_to_h_mappings, g_to_h_cost = __compare(directed_g, directed_loop_h, undirected_h)
-            h_prime = __graph_to_image(undirected_h, g_to_h_mappings)
+            g_to_h_mappings, g_to_h_cost = __compare(directed_g, directed_loop_h, undirected_h,
+                                                     use_paths=use_path_g_to_h)
+            h_prime = __graph_to_image(undirected_h, g_to_h_mappings, use_paths=use_path_g_to_h)
             # h_with_i_similarity = __graph_to_image_similarity(undirected_h, g_to_h_mappings)
 
-            h_to_g_mappings, h_to_g_cost = __compare(directed_h, directed_loop_g, undirected_g)
-            g_prime = __graph_to_image(undirected_g, h_to_g_mappings)
+            h_to_g_mappings, h_to_g_cost = __compare(directed_h, directed_loop_g, undirected_g,
+                                                     use_paths=use_path_h_to_g)
+            g_prime = __graph_to_image(undirected_g, h_to_g_mappings, use_paths=use_path_h_to_g)
 
             # g_with_i_prime_similarity = __graph_to_image_similarity(undirected_g, h_to_g_mappings)
             # h_with_i_prime_similarity = __graph_to_image_similarity(undirected_h, h_to_g_mappings)
@@ -129,7 +136,7 @@ if __name__ == '__main__':
             )
 
     columns = [
-        f"'{config.g_graph_path}' {'to H paths' if use_paths else 'to H edges'}", "Cost_LP(G,H)", "Cost_LP(H,G)",
+        f"{config.g_graph_path} To Target", "Cost_LP(G,H)", "Cost_LP(H,G)",
         "Sim(H & H')", "Sim(G & G')"
         # "Sim(G & H)", "Sim(G & I)", "Sim(H & I)","Sim(G & I')", "Sim(H & I')"
     ]
@@ -143,7 +150,6 @@ if __name__ == '__main__':
     df_normalized = df.copy()
     for column in df_normalized.columns[1:]:
         max_value = df_normalized[column].max()
-        min_value = df_normalized[column].min()
         if max_value == 0:
             df_normalized[column] = 0
         else:
