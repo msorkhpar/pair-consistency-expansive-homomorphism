@@ -21,4 +21,4 @@ def length_cost(beta, total_g_length, total_h_length, min_h_length, uv_length, i
     else:
         probability = probability_cost_function(g_length, h_length)
     cost = 1 - probability
-    return (1 + beta * cost) ** 4
+    return (1 + beta * cost) ** 8

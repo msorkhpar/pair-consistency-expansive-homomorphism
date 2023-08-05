@@ -33,10 +33,11 @@ use_path_g_to_h = False
 use_path_h_to_g = True
 
 
-def __graph_to_image(u_h, mappings, use_paths) -> nx.Graph:
+def __graph_to_image(u_h, mappings, use_paths) -> tuple[nx.Graph, float]:
     h_edge_pairs = {(i, j): NodePair((i, j), data["length"], data["path"]) for (i, j), data in
                     build_degree_two_paths(u_h, use_paths).items()}
     graph_to_image = nx.Graph()
+    graph_to_image_edges = 0
     for key in mappings.keys():
         u, v, i, j = key.e1.v1, key.e1.v2, key.e2.v1, key.e2.v2
         path = h_edge_pairs[(i, j)].path
@@ -47,9 +48,14 @@ def __graph_to_image(u_h, mappings, use_paths) -> nx.Graph:
             if graph_to_image.has_edge(p1, p2):
                 graph_to_image[p1][p2]["weight"] *= 10
             else:
+                if p1 != p2:
+                    graph_to_image_edges += weight
                 graph_to_image.add_edge(p1, p2, weight=weight)
 
-    return graph_to_image
+    prime_coverage = graph_to_image_edges / sum(
+        data['weight'] for i, j, data in u_h.edges(data=True) if i != j)
+
+    return graph_to_image, prime_coverage
 
 
 def __compare(dg, d_l_h, u_h, g_aspect_ratio, h_aspect_ratio, use_paths):
@@ -57,7 +63,8 @@ def __compare(dg, d_l_h, u_h, g_aspect_ratio, h_aspect_ratio, use_paths):
                     build_degree_two_paths(u_h, use_paths).items()}
 
     g_to_h_costs: dict[EdgeMap, dict[str, float]] = calculate_mapping_cost(dg, d_l_h, list(h_edge_pairs.values()),
-                                                                           alpha, beta, gamma, g_aspect_ratio,h_aspect_ratio)
+                                                                           alpha, beta, gamma, g_aspect_ratio,
+                                                                           h_aspect_ratio)
     solver_g_to_h_solver = Solver(dg, d_l_h, list(h_edge_pairs.values()), g_to_h_costs)
     g_to_h = solver_g_to_h_solver.solve()
     logger.info(g_to_h)
@@ -107,12 +114,12 @@ if __name__ == '__main__':
 
             g_to_h_mappings, g_to_h_cost = __compare(directed_g, directed_loop_h, undirected_h, g_aspect_ratio,
                                                      h_aspect_ratio, use_paths=use_path_g_to_h)
-            h_prime = __graph_to_image(undirected_h, g_to_h_mappings, use_paths=use_path_g_to_h)
+            h_prime, h_prime_coverage = __graph_to_image(undirected_h, g_to_h_mappings, use_paths=use_path_g_to_h)
             # h_with_i_similarity = __graph_to_image_similarity(undirected_h, g_to_h_mappings)
 
             h_to_g_mappings, h_to_g_cost = __compare(directed_h, directed_loop_g, undirected_g, h_aspect_ratio,
                                                      g_aspect_ratio, use_paths=use_path_h_to_g)
-            g_prime = __graph_to_image(undirected_g, h_to_g_mappings, use_paths=use_path_h_to_g)
+            g_prime, g_prime_coverage = __graph_to_image(undirected_g, h_to_g_mappings, use_paths=use_path_h_to_g)
 
             # g_with_i_prime_similarity = __graph_to_image_similarity(undirected_g, h_to_g_mappings)
             # h_with_i_prime_similarity = __graph_to_image_similarity(undirected_h, h_to_g_mappings)
@@ -125,23 +132,25 @@ if __name__ == '__main__':
             # h_with_h_prime_similarity = similarity(undirected_h, h_prime)
             # g_with_g_prime_similarity = similarity(undirected_g, g_prime)
 
-            h_desc = netlsd.heat(undirected_h)
-            h_prime_desc = netlsd.heat(h_prime)
-            g_prime_desc = netlsd.heat(g_prime)
-            g_desc = netlsd.heat(undirected_g)
+            # h_desc = netlsd.heat(undirected_h)
+            # h_prime_desc = netlsd.heat(h_prime)
+            # g_prime_desc = netlsd.heat(g_prime)
+            # g_desc = netlsd.heat(undirected_g)
 
-            heat_h_h_prime = netlsd.compare(h_desc, h_prime_desc)
-            heat_g_g_prime = netlsd.compare(g_desc, g_prime_desc)
-            heat_h_prime_g_prime = netlsd.compare(h_prime_desc, g_prime_desc)
+            # heat_h_h_prime = netlsd.compare(h_desc, h_prime_desc)
+            # heat_g_g_prime = netlsd.compare(g_desc, g_prime_desc)
+            # heat_h_prime_g_prime = netlsd.compare(h_prime_desc, g_prime_desc)
 
             result.append(
                 [
                     h_name,
                     g_to_h_cost,
                     h_to_g_cost,
-                    heat_h_h_prime,
-                    heat_g_g_prime,
-                    heat_h_prime_g_prime
+                    # heat_h_h_prime,
+                    # heat_g_g_prime,
+                    # heat_h_prime_g_prime,
+                    g_prime_coverage,
+                    h_prime_coverage
                     # round(g_with_h_similarity, 2),
                     # round(g_with_i_similarity, 2),
                     # round(h_with_i_similarity, 2),
@@ -152,7 +161,7 @@ if __name__ == '__main__':
 
     columns = [
         f"{config.g_graph_path} To Target", "Cost_LP(G,H)", "Cost_LP(H,G)",
-        "Heat(H & H')", "Heat(G & G')", "Heat(H' & G')",
+        "G' Coverage", "H' Coverage"
         # "Sim(G & H)", "Sim(G & I)", "Sim(H & I)","Sim(G & I')", "Sim(H & I')"
     ]
     with open(os.path.join(output_path, "result.csv"), 'w') as file:
@@ -175,12 +184,12 @@ if __name__ == '__main__':
 
     g_to_h_cost = df_normalized[df_normalized.columns[1]]
     h_to_g_cost = df_normalized[df_normalized.columns[2]]
-    heat_h_h_prime = df_normalized[df_normalized.columns[3]]
-    heat_g_g_prime = df_normalized[df_normalized.columns[4]]
-    heat_h_prime_g_prime = df_normalized[df_normalized.columns[5]]
+    g_prime_coverage = df_normalized[df_normalized.columns[3]]
+    h_prime_coverage = df_normalized[df_normalized.columns[4]]
 
     score = (
-        g_to_h_cost
+            g_to_h_cost + g_to_h_cost * (1 - h_prime_coverage) +
+            h_to_g_cost + h_to_g_cost * (1 - g_prime_coverage)
         # .1 * h_to_g_cost +
         # .2 * heat_h_h_prime +
         # .2 * heat_g_g_prime +

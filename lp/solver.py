@@ -6,6 +6,7 @@ import time
 import networkx as nx
 from ortools.linear_solver import pywraplp
 
+#from lp.objectives.maximize_edge_usage import maximize_edge_usage
 from lp.parameters import Parameters, EdgeMap, NodePair
 from lp.solution import Solution
 from lp.variables.mapping_variables import create_edges_mapping_variables
@@ -56,6 +57,7 @@ class Solver:
     def _set_objective(self):
         logger.debug("Setting objective initiated")
         minimize_cost(self.parameters)
+        #maximize_edge_usage(self.parameters)
         logger.debug("Setting objective finished")
 
     def solve(self) -> Solution | None:
