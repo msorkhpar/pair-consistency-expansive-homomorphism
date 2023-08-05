@@ -23,7 +23,7 @@ class InputGraph:
         return {(i, j): NodePair((i, j), data["length"], data["path"]) for (i, j), data in
                 build_degree_two_paths(self.undirected_graph, self.use_paths).items()}
 
-    def __init__(self, adjacency_list_path: str, label_postfix: str = "", use_paths: bool = False):
+    def __init__(self, adjacency_list_path: str, use_paths: bool = False,label_postfix: str = ""):
         self.undirected_graph, self.directed_graph, self.self_loop_graph = construct_nxgraphs(
             adjacency_list_path, label_postfix
         )

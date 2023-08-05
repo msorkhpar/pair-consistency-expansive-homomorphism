@@ -46,14 +46,14 @@ if __name__ == '__main__':
     shutil.rmtree(output_path, ignore_errors=True)
     os.makedirs(output_path)
 
-    g = InputGraph(config.g_graph_path)
+    g = InputGraph(config.g_graph_path, use_path_g_to_h)
 
     result = []
     for root, directories, h_adjlists in os.walk(config.computerized_graphs_dir):
         for h_adjlist in h_adjlists:
             h_adjlist_path = os.path.join(root, h_adjlist)
             h_name = h_adjlist.split(".")[0]
-            h = InputGraph(h_adjlist_path, "'")
+            h = InputGraph(h_adjlist_path, use_path_h_to_g, "'")
 
             g_h_costs, g_h_solution, h_prime = compare(g, h)
             logger.info(g_h_solution)

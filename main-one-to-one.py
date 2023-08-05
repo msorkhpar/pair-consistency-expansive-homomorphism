@@ -45,8 +45,8 @@ if __name__ == '__main__':
     shutil.rmtree(output_path, ignore_errors=True)
     os.makedirs(output_path)
 
-    g = InputGraph(config.g_graph_path)
-    h = InputGraph(config.h_graph_path, "'")
+    g = InputGraph(config.g_graph_path, use_path_g_to_h)
+    h = InputGraph(config.h_graph_path, use_path_h_to_g, "'")
     g_h_costs, g_h_solution, h_prime = compare(g, h)
     h_g_costs, h_g_solution, g_prime = compare(h, g)
     MappingDrawer(os.path.join(output_path, f"1_to_1.png"), g.undirected_graph, h.undirected_graph,
