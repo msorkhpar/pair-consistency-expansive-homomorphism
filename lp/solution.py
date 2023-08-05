@@ -25,13 +25,4 @@ class Solution:
                      parameter.variables.items() if value.solution_value() != 0}
         variables = dict(sorted(variables.items(), key=lambda x: x[1], reverse=True))
         self.variables = variables.copy()
-        self.cost = parameter.objective_value()
-
-    def relabel_variables(self, g_labels, h_labels):
-        result = {}
-        for mapping, value in self.variables.items():
-            uv = mapping.e1
-            ij = mapping.e2
-            new_mapping = EdgeMap(NodePair((g_labels[uv.v1], g_labels[uv.v2])), NodePair((h_labels[ij.v1], h_labels[ij.v2])))
-            result[new_mapping] = value
-        self.variables = result
+        self.cost = parameter.objective_value() - len(parameter.g_edges)

@@ -12,6 +12,6 @@ def _vectors_angle(u, v, i, j):
     return math.degrees(math.acos(round(dot_product / length_product, 10)))
 
 
-def angle_cost(gamma, u, v, i, j):
+def angle_cost(alpha, u, v, i, j):
     theta = _vectors_angle(u, v, i, j)
-    return 1 + gamma * abs(theta) / 180
+    return (1 + abs(theta) / 180) ** alpha

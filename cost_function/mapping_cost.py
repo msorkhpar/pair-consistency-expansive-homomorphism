@@ -5,8 +5,6 @@ import networkx as nx
 from cost_function.length_cost import length_cost
 from cost_function.angle_cost import angle_cost
 from cost_function.distance_cost import distance_cost
-from cost_function.direction_cost import direction_cost
-from cost_function.orientation_cost import orientation_cost
 from lp.parameters import NodePair, EdgeMap
 from utils.max_pair_distance_calculator import calculate_max_pair_distance
 
@@ -26,16 +24,13 @@ def _total_length(graph: nx.Graph):
 
 def _calculate_uv_ij_cost(max_distance, total_G_length, min_g_length, total_H_length, min_h_length, alpha, beta, gamma,
                           uv, uv_length, ij, ij_length, g_aspect_ratio, h_aspect_ratio):
-    alpha = 1
-    beta = 1
-    gamma = 1
-    distance = distance_cost(alpha, max_distance, g_aspect_ratio, h_aspect_ratio, uv.v1, uv.v2, ij.v1, ij.v2)
+    angle = angle_cost(alpha, uv.v1, uv.v2, ij.v1, ij.v2)
+    distance = distance_cost(beta, max_distance, g_aspect_ratio, h_aspect_ratio, uv.v1, uv.v2, ij.v1, ij.v2)
     length = length_cost(
-        beta, total_G_length, total_H_length, min_h_length, uv_length, ij_length, uv.v1, uv.v2, ij.v1, ij.v2)
-    angle = angle_cost(gamma, uv.v1, uv.v2, ij.v1, ij.v2)
+        gamma, total_G_length, total_H_length, min_h_length, uv_length, ij_length, uv.v1, uv.v2, ij.v1, ij.v2)
 
     return {
-        "cost": round((length * distance * angle), 6),
+        "cost": (length * distance * angle),
         "angle": angle,
         "length": length,
         "distance": distance,
