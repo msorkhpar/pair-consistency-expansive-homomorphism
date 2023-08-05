@@ -6,7 +6,7 @@ import numpy as np
 from utils.config import Config
 
 
-def graph_width_height_frame(graph: nx.Graph):
+def find_aspect_ratio(graph: nx.Graph):
     x1, y1 = np.inf, np.inf
     x2, y2 = -np.inf, -np.inf
     for x, y in graph.nodes:
@@ -17,9 +17,9 @@ def graph_width_height_frame(graph: nx.Graph):
     width = x2 - x1
     height = y2 - y1
 
-    if math.isinf(width) or width == 0:
-        width = 1
-    if math.isinf(height) or height == 0:
-        height = 1
+    if math.isinf(width) or width <= 1:
+        return 1
+    if math.isinf(height) or height <= 1:
+        return 1
 
-    return width, height
+    return min(width, height) / max(width, height)

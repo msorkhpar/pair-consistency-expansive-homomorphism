@@ -8,6 +8,7 @@ from lp.parameters import NodePair, EdgeMap
 from lp.solver import Solver
 from utils.config import Config
 from utils.h_path_builder import build_degree_two_paths
+from utils.node_label import generate_node_labels
 from utils.nxgraph_reader import construct_nxgraph
 from utils.result_drawer import draw_LP_result
 from cost_function.mapping_cost import calculate_mapping_cost
@@ -20,7 +21,7 @@ beta = 0.3  # length
 use_paths = True
 
 
-def __graph_to_image(u_h, mappings) -> nx.Graph:
+def __graph_to_image(u_h, mappings, names) -> nx.Graph:
     h_edge_pairs = {(i, j): NodePair((i, j), data["length"], data["path"]) for (i, j), data in
                     build_degree_two_paths(u_h, use_paths).items()}
     graph_to_h_image = nx.Graph()
@@ -67,8 +68,8 @@ if __name__ == '__main__':
     directed_g = construct_nxgraph(config.g_graph_path, type=nx.DiGraph)
     directed_loop_h = construct_nxgraph(config.h_graph_path, type=nx.DiGraph, add_self_loops=True)
     undirected_h = construct_nxgraph(config.h_graph_path)
+    names = generate_node_labels(directed_g, undirected_h)
 
     g_to_h_mappings, g_to_h_cost = __compare(directed_g, directed_loop_h, undirected_h)
-    i_graph = __graph_to_image(undirected_h, g_to_h_mappings)
-
-    draw_LP_result(directed_g, undirected_h, None, g_to_h_mappings, I=i_graph)
+    h_prime = __graph_to_image(undirected_h, g_to_h_mappings, names)
+    draw_LP_result(directed_g, undirected_h, None, g_to_h_mappings, H_prime=h_prime)

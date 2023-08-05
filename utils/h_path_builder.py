@@ -62,7 +62,11 @@ def _find_paths(graph: nx.Graph):
                     continue
                 if node in list(g.neighbors(paths[path_name][-1])):
                     paths[path_name].append(node)
-    return {key: path for key, path in paths.items() if len(path) > 1}
+    paths = {key: path for key, path in paths.items() if len(path) > 1}
+    for key, path in paths.items():
+        if path[0] in list(graph.neighbors(path[-1])) and len(path) > 2:
+            paths[key].append(path[0])
+    return paths
 
 
 def __generate_permutations_with_duplicates(elements, length, current=None):
@@ -91,28 +95,38 @@ def __build_path_graph(path: list[tuple[int, int]]) -> tuple[nx.Graph, float]:
     return path_graph, total_weight
 
 
+def __add_cycles_to_paths(h: nx.Graph, paths: dict) -> dict:
+    for key, path in paths.items():
+        if path[0] in list(h.neighbors(path[-1])):
+            paths[key].append(path[0])
+    return paths
+
+
 def build_degree_two_paths(h: nx.Graph, use_paths=False) -> dict[
     tuple[tuple[int, int], tuple[int, int]], dict[str, any]]:
     h_pairs = {}
 
     if use_paths:
         paths = _find_paths(h)
-        h_pairs = {}
 
+        h_pairs = {}
         for key, path in paths.items():
             path_graph, path_weight = __build_path_graph(path)
             node_pairs = __generate_permutations_with_duplicates(path, 2)
-            is_a_cycle = (path[0] == path[-1]) & len(path) > 2
             for i, j in node_pairs:
-                if i == j and is_a_cycle:
-                    length = path_weight
-                    p = path
+                if i == j == path[0] and i == j == path[-1]:
+                    length = 0
+                    p = [i, i]
                 else:
                     length = nx.shortest_path_length(path_graph, i, j, weight="weight")
                     p = nx.shortest_path(path_graph, i, j, weight="weight")
                     if len(p) == 1:
                         p = [i, i]
-                h_pairs[(i, j)] = {"length": length, "path": p}
+                if h_pairs.get((i, j), None) is not None:
+                    if h_pairs[(i, j)]["length"] > length:
+                        h_pairs[(i, j)] = {"length": length, "path": p}
+                else:
+                    h_pairs[(i, j)] = {"length": length, "path": p}
     else:
         for i, j in h.edges:
             h_pairs[(i, j)] = {"length": math.dist(i, j), "path": [i, j]}

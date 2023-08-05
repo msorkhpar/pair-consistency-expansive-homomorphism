@@ -75,17 +75,19 @@ class EdgeMap:
 
 
 class Parameters:
-    def __init__(self, g: nx.Graph, h: nx.gnr_graph, g_edges: list[NodePair],
+    def __init__(self, g: nx.Graph, h: nx.gnr_graph, g_edges: list[NodePair], h_edges: list[NodePair],
                  h_edge_pairs: list[NodePair],
                  mapping_costs: dict[EdgeMap, dict[str, float]]):
         self.variables: dict[EdgeMap, pywraplp.Variable] = dict()
         self.g = g
         self.h = h
         self.g_edges = g_edges
+        self.h_edges = h_edges
         self.h_edge_pairs = h_edge_pairs
         self.mapping_costs = mapping_costs
         self._solver: pywraplp.Solver = pywraplp.Solver.CreateSolver(Config().solver_engine)
         self._objective: pywraplp.Objective = self._solver.Objective()
+        self._second_objective: pywraplp.Objective = self._solver.Objective()
         self.h_edge_pairs_dict: dict[tuple[int, int], set[NodePair]] = dict()
         for e in h_edge_pairs:
             if e.v1 not in self.h_edge_pairs_dict:
@@ -125,17 +127,32 @@ class Parameters:
     def add_constraint_rule(self, constraint_rule: pywraplp.LinearConstraint):
         self._solver.Add(constraint_rule)
 
-    def set_objective_coefficient(self, variable: pywraplp.Variable, coefficient: float):
-        self._objective.SetCoefficient(variable, coefficient)
+    def set_objective_coefficient(self, variable: pywraplp.Variable, coefficient: float, target: str = "first"):
+        if target == "first":
+            self._objective.SetCoefficient(variable, coefficient)
+        elif target == "second":
+            self._second_objective.SetCoefficient(variable, coefficient)
 
-    def minimization(self):
-        self._objective.SetMinimization()
+    def minimization(self, target: str = "first"):
+        if target == "first":
+            self._objective.SetMinimization()
+        elif target == "second":
+            self._second_objective.SetMinimization()
+
+    def maximization(self, target: str = "first"):
+        if target == "first":
+            self._objective.SetMaximization()
+        elif target == "second":
+            self._second_objective.SetMaximization()
 
     def solve(self) -> int:
         return self._solver.Solve()
 
-    def objective_value(self) -> float:
-        return self._objective.Value()
+    def objective_value(self, target: str = "first") -> float:
+        if target == "first":
+            return self._objective.Value()
+        elif target == "second":
+            return self._second_objective.Value()
 
     def clear_context(self):
         self._solver.Clear()

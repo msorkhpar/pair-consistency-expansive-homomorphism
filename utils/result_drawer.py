@@ -123,6 +123,7 @@ import numpy as np
 import cv2
 
 from lp.parameters import EdgeMap, NodePair
+from utils.node_label import generate_node_labels
 
 
 def __draw_graph(output, graph: nx.Graph, names: dict[tuple[int, int], str], x_padding=0, y_padding=0, color=(0, 0, 0)):
@@ -197,7 +198,7 @@ def __draw_mapping(output, mappings: dict[EdgeMap, dict[str, float]], names: dic
         # __drawline(output, (center_uv_x, center_uv_y), (center_ij_x, center_ij_y), (0, 0, 0), 1)
         text = (
             f"{names[uv.v1]}{names[uv.v2]}->{names[ij.v1]}{names[ij.v2]}= {mappings[mapping]['cost']}  "
-            f"[ 0.6 * D={round(mappings[mapping]['distance'], 5)}, 0.4 * L={round(mappings[mapping]['length'], 5)} ]"
+            f"[ D={round(mappings[mapping]['distance'], 5)}, A={round(mappings[mapping]['angle'], 5)}, L={round(mappings[mapping]['length'], 5)} ]"
             f""
         )
         total_cost += mappings[mapping]['cost']
@@ -208,27 +209,12 @@ def __draw_mapping(output, mappings: dict[EdgeMap, dict[str, float]], names: dic
                 (0, 0, 0), 2, cv2.LINE_AA, False)
 
 
-def _assign_name_to_node(names, counter, node):
-    if node not in names:
-        names[node] = chr(counter)
-        counter += 1
-    return counter
-
-
-def __assign_names_to_nodes(names, counter, graph: nx.Graph):
-    for node in graph.nodes:
-        counter = _assign_name_to_node(names, counter, node)
-    return counter
-
-
 def draw_LP_result(G: nx.Graph, H: nx.Graph, output_path: str,
                    g_to_h_mappings: dict[EdgeMap, dict[str, float]],
                    h_to_g_mappings: dict[EdgeMap, dict[str, float]] = None,
-                   H_prime: nx.Graph = None, G_prime: nx.Graph = None):
-    counter = 97
-    names = {}
-    counter = __assign_names_to_nodes(names, counter, G)
-    counter = __assign_names_to_nodes(names, counter, H)
+                   H_prime: nx.Graph = None, G_prime: nx.Graph = None, names=None):
+    if not names:
+        names = generate_node_labels(G, H)
 
     if not h_to_g_mappings:
         main_output = np.ones((1024, 1024 + 900, 3), np.uint8) * 255
@@ -245,7 +231,7 @@ def draw_LP_result(G: nx.Graph, H: nx.Graph, output_path: str,
     if h_to_g_mappings:
         __draw_graph(main_output, H, names, 0, 1124)
         __draw_graph(second_output, G, names, 0, 1124)
-        __draw_graph(second_output, G_prime, names, 1, 1124+1, (0, 0, 255))
+        __draw_graph(second_output, G_prime, names, 1, 1124 + 1, (0, 0, 255))
         __draw_mapping(second_output, h_to_g_mappings, names, 0, 1124)
 
     output = cv2.addWeighted(main_output, 0.25, second_output, 0.75, 0)

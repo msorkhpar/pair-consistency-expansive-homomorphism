@@ -12,6 +12,7 @@ pandas = "*"
 ortools = "9.6.2534"
 gurobipy = "*"
 sympy = "*"
+netlsd = "*"
 
 [dev-packages]
 

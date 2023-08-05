@@ -12,9 +12,8 @@ from lp.variables.mapping_variables import create_edges_mapping_variables
 from lp.constraints.const0 import const0
 from lp.constraints.const1 import const1
 from lp.constraints.const2 import const2
-from lp.objectives.minimize_distance import minimize_distance
+from lp.objectives.minimize_cost import minimize_cost
 from utils.config import Config
-
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +35,8 @@ class Solver:
         self.start = time.time()
         self.mapping_costs = mapping_costs
         g_edges = [NodePair(uv) for uv in g.edges()]
-        self.parameters = Parameters(g, directed_h, g_edges, h_edge_pairs, mapping_costs)
+        h_edges = [NodePair(uv) for uv in directed_h.edges()]
+        self.parameters = Parameters(g, directed_h, g_edges, h_edges, h_edge_pairs, mapping_costs)
         self._create_variables()
         self._set_up_constraints()
         self._set_objective()
@@ -55,7 +55,7 @@ class Solver:
 
     def _set_objective(self):
         logger.debug("Setting objective initiated")
-        minimize_distance(self.parameters)
+        minimize_cost(self.parameters)
         logger.debug("Setting objective finished")
 
     def solve(self) -> Solution | None:
