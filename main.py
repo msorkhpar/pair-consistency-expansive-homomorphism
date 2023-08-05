@@ -1,95 +1,97 @@
 import csv
 import logging
+import math
+
+import networkx as nx
+import pandas as pd
+
+import logging
 
 import os
-from functools import cmp_to_key
-from operator import itemgetter
-from typing import List, Any
 import shutil
 
-from lp.solver import Solver
+import mapper
+from h_prime_builder import HPrime
+from input_graph import InputGraph
+from result_drawer import MappingDrawer
+from solver import Solver
 from utils.config import Config
-from utils.nxgraph_reader import construct_nxgraph
-from utils.result_drawer import draw_LP_result
+
+logger = logging.getLogger(__name__)
+alpha = 2
+beta = 3
+gamma = 9
+
+use_path_g_to_h = True
+use_path_h_to_g = True
+
+
+def compare(base_graph: InputGraph, target_graph: InputGraph):
+    costs = mapper.MapGtoH(base_graph, target_graph, alpha, beta, gamma).calculate_mapping_costs()
+    solution = Solver(base_graph, target_graph, costs).solve()
+    target_prime = HPrime(target_graph, solution)
+    return costs, solution, target_prime
 
 
 if __name__ == '__main__':
+
     config = Config()
     logging.basicConfig(format='%(asctime)s %(levelname)s:%(name)s:%(funcName)s:%(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S',
                         level=config.log_level)
     logger = logging.getLogger(__name__)
-    logger.info(f"Loaded configurations:{config}")
 
-    G = construct_nxgraph(config.g_graph_path)
+    logger.info(f"Loaded configurations:{config}")
+    output_path = "./output"
+    shutil.rmtree(output_path, ignore_errors=True)
+    os.makedirs(output_path)
+
+    g = InputGraph(config.g_graph_path, use_path_g_to_h)
 
     result = []
-    counter = 0
     for root, directories, h_adjlists in os.walk(config.computerized_graphs_dir):
         for h_adjlist in h_adjlists:
-            counter += 1
             h_adjlist_path = os.path.join(root, h_adjlist)
             h_name = h_adjlist.split(".")[0]
-            H = construct_nxgraph(h_adjlist_path)
-            if H.number_of_nodes() < 2:
-                continue
-            logger.info(f"Running against {h_name}")
-            solver_g_to_h_solver = Solver(G, H)
-            g_to_h = solver_g_to_h_solver.solve()
-            solver_g_to_h_solver.clear()
-            logger.info(g_to_h)
-            if not g_to_h:
-                continue
+            h = InputGraph(h_adjlist_path, use_path_h_to_g, "'")
 
-            first_distance = 0 if g_to_h is None else g_to_h.distance
-            first_time = 0 if g_to_h is None else g_to_h.running_time
+            g_h_costs, g_h_solution, h_prime = compare(g, h)
+            logger.info(g_h_solution)
+
+            h_g_costs, h_g_solution, g_prime = compare(h, g)
+            logger.info(h_g_solution)
+            MappingDrawer(os.path.join(output_path, f"{h_name}.png"), g.undirected_graph, h.undirected_graph,
+                          h_prime.prime_graph, g_h_solution.variables, g_prime.prime_graph,
+                          h_g_solution.variables).draw()
+
             result.append([
-                h_name,
-                first_distance,
-                first_time,
+                h_name, g_h_solution.cost, h_g_solution.cost, g_prime.coverage, h_prime.coverage
             ])
-            logger.info(f"Solved so far: {counter}")
 
-    result.sort(key=lambda x: x[1])
-    final = list()
-    for i in range(len(result) // 1):
-        row = result[i]
-        h_name = row[0]
-        first_distance = row[1]
-        first_time = row[2]
-        h_adjlist_path = os.path.join(config.computerized_graphs_dir, f"{h_name}.adjlist")
-        H = construct_nxgraph(h_adjlist_path)
-
-        solver_g_to_h_solver = Solver(G, H)
-        g_to_h = solver_g_to_h_solver.solve()
-        solver_g_to_h_solver.clear()
-
-        g_to_h_values = list(g_to_h.variables.keys())
-
-        solver_h_to_g_solver = Solver(H, G)
-        h_to_g = solver_h_to_g_solver.solve()
-        solver_h_to_g_solver.clear()
-
-        if not h_to_g:
-            continue
-        h_to_g_values = list(h_to_g.variables.keys())
-
-        logger.info(h_to_g)
-        second_distance = 0 if h_to_g is None else h_to_g.distance
-        delta_distance = abs(second_distance - first_distance)
-        second_time = 0 if h_to_g is None else h_to_g.running_time
-        final.append([
-            h_name,
-            delta_distance,
-            first_distance,
-            second_distance,
-            first_time,
-            second_time
-        ])
-        draw_LP_result(G, H, os.path.join(output_path, f"{h_name}.png"), g_to_h_values, h_to_g_values)
-
-    final = sorted(final, key=cmp_to_key(sorting))
+    columns = [f"{config.g_graph_path} To Target", "Cost_LP(G,H)", "Cost_LP(H,G)", "G' Coverage", "H' Coverage"]
     with open(os.path.join(output_path, "result.csv"), 'w') as file:
         writer = csv.writer(file)
-        writer.writerow(["name", "delta distance", "G to H distance", "H to G distance", "G->H time", "H->G time"])
-        writer.writerows(final)
+        writer.writerow(columns)
+        writer.writerows(result)
+
+    df = pd.DataFrame(result, columns=columns)
+
+    df_normalized = df.copy()
+    for column in df_normalized.columns[1:]:
+        max_value = df_normalized[column].max()
+        min_value = df_normalized[column].min()
+        if max_value == 0:
+            df_normalized[column] = 0
+        else:
+            df_normalized[column] = round(df_normalized[column], 2)
+
+    g_h_cost = df_normalized[df_normalized.columns[1]]
+    h_g_cost = df_normalized[df_normalized.columns[2]]
+    g_prime_coverage = df_normalized[df_normalized.columns[3]]
+    h_prime_coverage = df_normalized[df_normalized.columns[4]]
+
+    score = g_h_cost + g_h_cost * (1 - h_prime_coverage) + h_g_cost + h_g_cost * (1 - g_prime_coverage)
+    df_normalized['Score'] = round(score, 3)
+    df_normalized.sort_values(by='Score', ascending=True, inplace=True)
+
+    df_normalized.to_csv(os.path.join(output_path, "normalized_result.csv"), index=False)

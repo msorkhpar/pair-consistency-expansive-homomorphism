@@ -10,8 +10,9 @@ numpy = "1.24.3"
 networkx = "3.1"
 pandas = "*"
 ortools = "9.6.2534"
-gurobipy="*"
+gurobipy = "*"
 sympy = "*"
+netlsd = "*"
 
 [dev-packages]
 

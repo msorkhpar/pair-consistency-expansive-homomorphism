@@ -7,9 +7,11 @@ def _vectors_angle(u, v, i, j):
 
     dot_product = vector1[0] * vector2[0] + vector1[1] * vector2[1]
     length_product = math.dist(u, v) * math.dist(i, j)
-    return math.degrees(math.acos(dot_product / length_product))
+    if length_product == 0:
+        return 0
+    return math.degrees(math.acos(round(dot_product / length_product, 10)))
 
 
-def angle_cost(beta, u, v, i, j):
+def angle_cost(alpha, u, v, i, j):
     theta = _vectors_angle(u, v, i, j)
-    return beta * ((theta / 180) + (1 / beta))
+    return (1 + abs(theta) / 180) ** alpha
