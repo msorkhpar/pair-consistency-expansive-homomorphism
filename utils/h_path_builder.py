@@ -2,8 +2,6 @@ import math
 
 import networkx as nx
 
-from lp.parameters import NodePair
-
 
 def _find_paths(graph: nx.Graph):
     g = graph.to_undirected()

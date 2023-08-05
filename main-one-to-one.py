@@ -1,16 +1,23 @@
+import csv
 import logging
+import math
 
 import networkx as nx
+import pandas as pd
 
-from g_to_h_mapper import map_g_to_h
-from utils.assign_weight_to_edges import assign_edge_weights
+import logging
+
+import os
+import shutil
+
+import mapper
+from h_prime_builder import HPrime
+from input_graph import InputGraph
+from result_drawer import MappingDrawer
+from solver import Solver
 from utils.config import Config
-from utils.graph_frame_finder import find_aspect_ratio
-from utils.nxgraph_reader import construct_nxgraph
-from utils.result_drawer import draw_LP_result
 
 logger = logging.getLogger(__name__)
-
 alpha = 2
 beta = 3
 gamma = 9
@@ -18,24 +25,30 @@ gamma = 9
 use_path_g_to_h = True
 use_path_h_to_g = True
 
+
+def compare(base_graph: InputGraph, target_graph: InputGraph):
+    costs = mapper.MapGtoH(base_graph, target_graph, alpha, beta, gamma).calculate_mapping_costs()
+    solution = Solver(base_graph, target_graph, costs).solve()
+    target_prime = HPrime(target_graph, solution)
+    return costs, solution, target_prime
+
+
 if __name__ == '__main__':
     config = Config()
     logging.basicConfig(format='%(asctime)s %(levelname)s:%(name)s:%(funcName)s:%(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S',
                         level=config.log_level)
+    logger = logging.getLogger(__name__)
 
     logger.info(f"Loaded configurations:{config}")
-    logger.info(f"{config.g_graph_path} to {config.h_graph_path}")
-    directed_g = construct_nxgraph(config.g_graph_path, type=nx.DiGraph)
-    g_aspect_ratio = find_aspect_ratio(directed_g)
+    output_path = "./output"
+    shutil.rmtree(output_path, ignore_errors=True)
+    os.makedirs(output_path)
 
-    directed_loop_h = construct_nxgraph(config.h_graph_path, type=nx.DiGraph, add_self_loops=True)
-    undirected_h = construct_nxgraph(config.h_graph_path)
-    assign_edge_weights(undirected_h)
-    h_aspect_ratio = find_aspect_ratio(undirected_h)
-
-    g_to_h_mappings, g_to_h_cost, h_prime, h_prime_coverage = map_g_to_h(directed_g, directed_loop_h,
-                                                                         undirected_h, g_aspect_ratio,
-                                                                         h_aspect_ratio, alpha, beta, gamma,
-                                                                         use_path_g_to_h)
-    draw_LP_result(directed_g, undirected_h, None, g_to_h_mappings, H_prime=h_prime)
+    g = InputGraph(config.g_graph_path)
+    h = InputGraph(config.h_graph_path, "'")
+    g_h_costs, g_h_solution, h_prime = compare(g, h)
+    h_g_costs, h_g_solution, g_prime = compare(h, g)
+    MappingDrawer(os.path.join(output_path, f"1_to_1.png"), g.undirected_graph, h.undirected_graph,
+                  h_prime.prime_graph, g_h_solution.variables, g_prime.prime_graph,
+                  h_g_solution.variables).draw()

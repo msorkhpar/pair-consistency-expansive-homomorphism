@@ -5,19 +5,17 @@ import math
 import networkx as nx
 import pandas as pd
 
-from cost_function.mapping_cost import calculate_mapping_cost
-
 import logging
 
 import os
 import shutil
 
-from g_to_h_mapper import map_g_to_h
-from utils.assign_weight_to_edges import assign_edge_weights
+import mapper
+from h_prime_builder import HPrime
+from input_graph import InputGraph
+from result_drawer import MappingDrawer
+from solver import Solver
 from utils.config import Config
-from utils.graph_frame_finder import find_aspect_ratio
-from utils.nxgraph_reader import construct_nxgraph
-from utils.result_drawer import draw_LP_result
 
 logger = logging.getLogger(__name__)
 alpha = 2
@@ -26,6 +24,14 @@ gamma = 9
 
 use_path_g_to_h = True
 use_path_h_to_g = True
+
+
+def compare(base_graph: InputGraph, target_graph: InputGraph):
+    costs = mapper.MapGtoH(base_graph, target_graph, alpha, beta, gamma).calculate_mapping_costs()
+    solution = Solver(base_graph, target_graph, costs).solve()
+    target_prime = HPrime(target_graph, solution)
+    return costs, solution, target_prime
+
 
 if __name__ == '__main__':
 
@@ -40,47 +46,27 @@ if __name__ == '__main__':
     shutil.rmtree(output_path, ignore_errors=True)
     os.makedirs(output_path)
 
-    directed_g = construct_nxgraph(config.g_graph_path, type=nx.DiGraph)
-    directed_loop_g = construct_nxgraph(config.g_graph_path, type=nx.DiGraph, add_self_loops=True)
-    undirected_g = construct_nxgraph(config.g_graph_path)
-    assign_edge_weights(undirected_g)
-    g_aspect_ratio = find_aspect_ratio(undirected_g)
+    g = InputGraph(config.g_graph_path)
 
     result = []
-    counter = 0
     for root, directories, h_adjlists in os.walk(config.computerized_graphs_dir):
         for h_adjlist in h_adjlists:
-            counter += 1
             h_adjlist_path = os.path.join(root, h_adjlist)
             h_name = h_adjlist.split(".")[0]
-            directed_loop_h = construct_nxgraph(h_adjlist_path, type=nx.DiGraph, add_self_loops=True)
-            directed_h = construct_nxgraph(h_adjlist_path, type=nx.DiGraph)
-            undirected_h = construct_nxgraph(h_adjlist_path)
-            assign_edge_weights(undirected_h)
-            h_aspect_ratio = find_aspect_ratio(undirected_h)
+            h = InputGraph(h_adjlist_path, "'")
 
-            g_to_h_mappings, g_to_h_cost, h_prime, h_prime_coverage = map_g_to_h(directed_g, directed_loop_h,
-                                                                                 undirected_h, g_aspect_ratio,
-                                                                                 h_aspect_ratio, alpha, beta, gamma,
-                                                                                 use_path_g_to_h)
+            g_h_costs, g_h_solution, h_prime = compare(g, h)
+            logger.info(g_h_solution)
 
-            h_to_g_mappings, h_to_g_cost, g_prime, g_prime_coverage = map_g_to_h(directed_h, directed_loop_g,
-                                                                                 undirected_g, h_aspect_ratio,
-                                                                                 g_aspect_ratio, alpha, beta, gamma,
-                                                                                 use_path_h_to_g)
+            h_g_costs, h_g_solution, g_prime = compare(h, g)
+            logger.info(h_g_solution)
+            MappingDrawer(os.path.join(output_path, f"{h_name}.png"), g.undirected_graph, h.undirected_graph,
+                          h_prime.prime_graph, g_h_solution.variables, g_prime.prime_graph,
+                          h_g_solution.variables).draw()
 
-            draw_LP_result(undirected_g, undirected_h, os.path.join(output_path, f"{h_name}.png"), g_to_h_mappings,
-                           h_to_g_mappings, h_prime, g_prime)
-
-            result.append(
-                [
-                    h_name,
-                    g_to_h_cost,
-                    h_to_g_cost,
-                    g_prime_coverage,
-                    h_prime_coverage
-                ]
-            )
+            result.append([
+                h_name, g_h_solution.cost, h_g_solution.cost, g_prime.coverage, h_prime.coverage
+            ])
 
     columns = [f"{config.g_graph_path} To Target", "Cost_LP(G,H)", "Cost_LP(H,G)", "G' Coverage", "H' Coverage"]
     with open(os.path.join(output_path, "result.csv"), 'w') as file:
@@ -99,12 +85,12 @@ if __name__ == '__main__':
         else:
             df_normalized[column] = round(df_normalized[column], 2)
 
-    g_to_h_cost = df_normalized[df_normalized.columns[1]]
-    h_to_g_cost = df_normalized[df_normalized.columns[2]]
+    g_h_cost = df_normalized[df_normalized.columns[1]]
+    h_g_cost = df_normalized[df_normalized.columns[2]]
     g_prime_coverage = df_normalized[df_normalized.columns[3]]
     h_prime_coverage = df_normalized[df_normalized.columns[4]]
 
-    score = g_to_h_cost + g_to_h_cost * (1 - h_prime_coverage) + h_to_g_cost + h_to_g_cost * (1 - g_prime_coverage)
+    score = g_h_cost + g_h_cost * (1 - h_prime_coverage) + h_g_cost + h_g_cost * (1 - g_prime_coverage)
     df_normalized['Score'] = round(score, 3)
     df_normalized.sort_values(by='Score', ascending=True, inplace=True)
 
