@@ -16,6 +16,7 @@ class Config:
     computerized_graphs_dir: str = os.getenv('COMPUTERIZED_GRAPHS_DIR')
     solver_engine: str = os.getenv('SOLVER_ENGINE')
     solve_integrally: bool = True if os.getenv('INTEGRAL') == 'True' else False
+    generate_mapping_diagrams: bool = True if os.getenv('GENERATE_MAPPING_DIAGRAMS') == 'True' else False
     input_width: int = int(os.getenv('INPUT_WIDTH', '1024'))
     input_height: int = int(os.getenv('INPUT_HEIGHT', '1024'))
 
@@ -33,6 +34,7 @@ class Config:
         computerized_graphs_dir: {self.computerized_graphs_dir},
         solver_engine: {self.solver_engine},
         solve_integrally = {self.solve_integrally},
+        generate_mapping_diagrams = {self.generate_mapping_diagrams},
         input_width: {self.input_width},
         input_height: {self.input_height},
         )'''

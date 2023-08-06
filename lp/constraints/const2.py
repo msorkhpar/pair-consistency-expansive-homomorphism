@@ -14,7 +14,9 @@ def __check_constraint_rule(parameters: Parameters, uv: NodePair):
                 uv_ij = parameters.variable(uv, ij)  # compute this only once per ij
                 for st in parameters.h_paths:
                     if ij.v1 != st.v1:
-                        parameters.add_constraint_rule(uv_ij + parameters.variable(uw, st) <= 1)
+                        constraint = parameters.add_range_constraint(0, 1, f"{ij}&{st} Homomorphic constraint")
+                        constraint.SetCoefficient(uv_ij, 1)
+                        constraint.SetCoefficient(parameters.variable(uw, st), 1)
 
 
 def const2(parameters: Parameters):
