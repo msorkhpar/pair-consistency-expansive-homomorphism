@@ -16,9 +16,9 @@ class Parameters:
     def __init__(self, g: InputGraph, h: InputGraph, costs: dict[Mapping, MappingCost]):
         self.variables: dict[Mapping, pywraplp.Variable] = dict()
         self.g_neighbors: dict[tuple[int, int], list[tuple[int, int]]] = g.neighbors()
-        self.g_edges = g.edges(directed=True)
-        self.h_paths = h.paths()
-        self.costs = costs
+        self.g_edges: list[NodePair] = g.edges(directed=True)
+        self.h_paths: set[NodePair] = h.paths()
+        self.costs: dict[Mapping, MappingCost] = costs
         self._solver: pywraplp.Solver = pywraplp.Solver.CreateSolver(Config().solver_engine)
         self._objective: pywraplp.Objective = self._solver.Objective()
 

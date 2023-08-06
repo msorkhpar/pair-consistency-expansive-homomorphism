@@ -11,11 +11,10 @@ def __check_constraint_rule(parameters: Parameters, uv: NodePair):
         if w != v:
             uw = NodePair((u, w))
             for ij in parameters.h_paths:
+                uv_ij = parameters.variable(uv, ij)  # compute this only once per ij
                 for st in parameters.h_paths:
                     if ij.v1 != st.v1:
-                        parameters.add_constraint_rule(
-                            parameters.variable(uv, ij) + parameters.variable(uw, st) <= 1
-                        )
+                        parameters.add_constraint_rule(uv_ij + parameters.variable(uw, st) <= 1)
 
 
 def const2(parameters: Parameters):
