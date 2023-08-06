@@ -23,6 +23,16 @@ class InputGraph:
         return {(i, j): NodePair((i, j), data["length"], data["path"]) for (i, j), data in
                 build_degree_two_paths(self.undirected_graph, self.use_paths).items()}
 
+    def _construct_node_appearance(self) -> dict[tuple[int, int], set[NodePair]]:
+        result = dict()
+        for node_pair in self._paths.values():
+            path = node_pair.path
+            for node in path:
+                if result.get(node) is None:
+                    result[node] = set()
+                result[node].add(node_pair)
+        return result
+
     def __init__(self, adjacency_list_path: str, use_paths: bool = False, label_postfix: str = ""):
         self.undirected_graph, self.directed_graph, self.self_loop_graph = construct_nxgraphs(
             adjacency_list_path, label_postfix
@@ -32,6 +42,7 @@ class InputGraph:
         self.use_paths = use_paths
         self._paths: dict[tuple[tuple[int, int], tuple[int, int]], NodePair] = self._construct_paths()
         self._paths_set: set[NodePair] = set(self._paths.values())
+        self.node_in_paths_dict: dict[tuple[int, int], set[NodePair]] = self._construct_node_appearance()
 
     def edges(self, directed: bool = False, self_loop: bool = False) -> list[NodePair]:
         target_graph = self.undirected_graph
@@ -52,3 +63,6 @@ class InputGraph:
 
     def paths(self) -> set[NodePair]:
         return self._paths_set
+
+    def node_participation(self) -> dict[tuple[int, int], set[NodePair]]:
+        return self.node_in_paths_dict
