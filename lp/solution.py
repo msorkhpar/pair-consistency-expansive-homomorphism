@@ -25,8 +25,8 @@ class Solution:
         )'''
 
     def assign_solution(self, parameter: Parameters):
-        variables = {variable: value.solution_value() for variable, value in
-                     parameter.variables.items() if value.solution_value() != 0}
+        variables = {variable: parameter.solver.Value(cp_var) for variable, cp_var in
+                     parameter.variables.items() if parameter.solver.Value(cp_var) != 0}
         variables = dict(sorted(variables.items(), key=lambda x: x[1], reverse=True))
         mappings = {}
         for key in variables.keys():

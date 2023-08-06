@@ -5,6 +5,7 @@ import time
 
 import networkx as nx
 from ortools.linear_solver import pywraplp
+from ortools.sat.python import cp_model
 
 from input_graph import InputGraph
 from lp.parameters import Parameters
@@ -59,13 +60,9 @@ class Solver:
 
     def solve(self) -> Solution | None:
         try:
-            if Config().solve_integrally:
-                self.parameters.change_to_integral()
-            logger.info(f"Number of variables: {self.parameters.variables_num()}")
-            logger.info(f"Number of constraints: {self.parameters.constraints_num()}")
             logger.debug("Solving the problem initiated")
             status = self.parameters.solve()
-            if status == pywraplp.Solver.OPTIMAL:
+            if status == cp_model.OPTIMAL:
                 solution = Solution()
                 solution.running_time = time.time() - self.start
                 solution.assign_solution(self.parameters)
@@ -78,5 +75,4 @@ class Solver:
             self.clear()
 
     def clear(self):
-        self.parameters.clear_context()
         del self.parameters
