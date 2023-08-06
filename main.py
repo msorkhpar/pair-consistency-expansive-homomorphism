@@ -60,9 +60,10 @@ if __name__ == '__main__':
 
             h_g_costs, h_g_solution, g_prime = compare(h, g)
             logger.info(h_g_solution)
-            MappingDrawer(os.path.join(output_path, f"{h_name}.png"), g.undirected_graph, h.undirected_graph,
-                          h_prime.prime_graph, g_h_solution.variables, g_prime.prime_graph,
-                          h_g_solution.variables).draw()
+            if config.generate_mapping_diagrams:
+                MappingDrawer(os.path.join(output_path, f"{h_name}.png"), g.undirected_graph, h.undirected_graph,
+                              h_prime.prime_graph, g_h_solution.variables, g_prime.prime_graph,
+                              h_g_solution.variables).draw()
 
             result.append([
                 h_name, g_h_solution.cost, h_g_solution.cost, g_prime.coverage, h_prime.coverage
