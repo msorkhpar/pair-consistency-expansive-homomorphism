@@ -22,8 +22,8 @@ alpha = 2
 beta = 3
 gamma = 9
 
-use_path_g_to_h = True
-use_path_h_to_g = True
+use_path_in_g_prime = True
+use_path_in_h_prime = True
 
 
 def compare(base_graph: InputGraph, target_graph: InputGraph):
@@ -34,7 +34,7 @@ def compare(base_graph: InputGraph, target_graph: InputGraph):
 
 
 if __name__ == '__main__':
-
+    statr_time = os.times()[0]
     config = Config()
     logging.basicConfig(format='%(asctime)s %(levelname)s:%(name)s:%(funcName)s:%(message)s',
                         datefmt='%Y-%m-%d %H:%M:%S',
@@ -46,14 +46,14 @@ if __name__ == '__main__':
     shutil.rmtree(output_path, ignore_errors=True)
     os.makedirs(output_path)
 
-    g = InputGraph(config.g_graph_path, use_path_g_to_h)
+    g = InputGraph(config.g_graph_path, use_path_in_g_prime)
 
     result = []
     for root, directories, h_adjlists in os.walk(config.computerized_graphs_dir):
         for h_adjlist in h_adjlists:
             h_adjlist_path = os.path.join(root, h_adjlist)
             h_name = h_adjlist.split(".")[0]
-            h = InputGraph(h_adjlist_path, use_path_h_to_g, "'")
+            h = InputGraph(h_adjlist_path, use_path_in_h_prime, "'")
 
             g_h_costs, g_h_solution, h_prime = compare(g, h)
             logger.info(g_h_solution)
@@ -96,3 +96,4 @@ if __name__ == '__main__':
     df_normalized.sort_values(by='Score', ascending=True, inplace=True)
 
     df_normalized.to_csv(os.path.join(output_path, "normalized_result.csv"), index=False)
+    print(f"Total time: {os.times()[0] - statr_time}")
