@@ -96,4 +96,7 @@ if __name__ == '__main__':
     df_normalized.sort_values(by='Score', ascending=True, inplace=True)
 
     df_normalized.to_csv(os.path.join(output_path, "normalized_result.csv"), index=False)
-    print(f"Total time: {os.times()[0] - statr_time}")
+    logger.info(f"Total time: {os.times()[0] - statr_time}")
+    logger.info("*"*50)
+    for index, rank_name in [(0, "Fist"), (1, "Second"), (2, "Third")]:
+        logger.info(f"{rank_name} rank is: {df_normalized.iloc[index][0]} = {df_normalized.iloc[index][5]}")
