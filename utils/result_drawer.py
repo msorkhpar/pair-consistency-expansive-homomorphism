@@ -2,8 +2,8 @@ import networkx as nx
 import numpy as np
 import cv2
 
-from mapping import Mapping
-from mapping_cost import MappingCost
+from mappings.mapping import Mapping
+from mappings.mapping_cost import MappingCost
 
 
 class MappingDrawer:

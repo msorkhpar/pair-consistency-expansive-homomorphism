@@ -3,9 +3,9 @@ from __future__ import annotations
 from lp.parameters import Parameters
 import logging
 
-from mapping import Mapping
-from mapping_cost import MappingCost
-from node_pair import NodePair
+from mappings.mapping import Mapping
+from mappings.mapping_cost import MappingCost
+from mappings.node_pair import NodePair
 
 logger = logging.getLogger(__name__)
 

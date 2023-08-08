@@ -1,5 +1,5 @@
-from input_graph import InputGraph
-from solution import Solution
+from input_graphs.input_graph import InputGraph
+from lp.solution import Solution
 import networkx as nx
 
 

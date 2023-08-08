@@ -10,12 +10,12 @@ import logging
 import os
 import shutil
 
-import mapper
-from h_prime_builder import HPrime
-from input_graph import InputGraph
-from result_drawer import MappingDrawer
-from solver import Solver
+from input_graphs.input_graph import InputGraph
+from lp.solver import Solver
+from mappings import mapper
+from mappings.h_prime_builder import HPrime
 from utils.config import Config
+from utils.result_drawer import MappingDrawer
 
 logger = logging.getLogger(__name__)
 alpha = 2
