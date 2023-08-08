@@ -1,8 +1,8 @@
 import math
 
-from h_path_builder import build_degree_two_paths
-from node_pair import NodePair
+from mappings.node_pair import NodePair
 from utils.graph_frame_finder import find_aspect_ratio
+from utils.h_path_builder import build_degree_two_paths
 from utils.nxgraph_reader import construct_nxgraphs
 
 

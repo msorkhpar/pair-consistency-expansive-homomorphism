@@ -6,7 +6,7 @@ import time
 import networkx as nx
 from ortools.linear_solver import pywraplp
 
-from input_graph import InputGraph
+from input_graphs.input_graph import InputGraph
 from lp.parameters import Parameters
 from lp.solution import Solution
 from lp.variables.mapping_variables import create_edges_mapping_variables
@@ -14,8 +14,8 @@ from lp.constraints.const0 import const0
 from lp.constraints.const1 import const1
 from lp.constraints.const2 import const2
 from lp.objectives.minimize_cost import minimize_cost
-from mapping import Mapping
-from mapping_cost import MappingCost
+from mappings.mapping import Mapping
+from mappings.mapping_cost import MappingCost
 from utils.config import Config
 
 logger = logging.getLogger(__name__)

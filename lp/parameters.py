@@ -3,10 +3,10 @@ from __future__ import annotations
 import logging
 from ortools.linear_solver import pywraplp
 
-from input_graph import InputGraph
-from mapping import Mapping
-from mapping_cost import MappingCost
-from node_pair import NodePair
+from input_graphs.input_graph import InputGraph
+from mappings.mapping import Mapping
+from mappings.mapping_cost import MappingCost
+from mappings.node_pair import NodePair
 from utils.config import Config
 
 logger = logging.getLogger(__name__)

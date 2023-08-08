@@ -3,9 +3,9 @@ import math
 from cost_function.length_cost import length_cost
 from cost_function.angle_cost import angle_cost
 from cost_function.distance_cost import distance_cost
-from input_graph import InputGraph
-from mapping import Mapping
-from mapping_cost import MappingCost
+from input_graphs.input_graph import InputGraph
+from mappings.mapping import Mapping
+from mappings.mapping_cost import MappingCost
 
 
 class MapGtoH:
