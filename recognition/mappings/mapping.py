@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from mappings.node_pair import NodePair
+from recognition.mappings.node_pair import NodePair
 
 
 class Mapping:

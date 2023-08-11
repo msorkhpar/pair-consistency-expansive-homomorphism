@@ -6,16 +6,16 @@ import time
 import networkx as nx
 from ortools.linear_solver import pywraplp
 
-from input_graphs.input_graph import InputGraph
-from lp.parameters import Parameters
-from lp.solution import Solution
-from lp.variables.mapping_variables import create_edges_mapping_variables
-from lp.constraints.const0 import const0
-from lp.constraints.const1 import const1
-from lp.constraints.const2 import const2
-from lp.objectives.minimize_cost import minimize_cost
-from mappings.mapping import Mapping
-from mappings.mapping_cost import MappingCost
+from recognition.input_graph import InputGraph
+from recognition.lp.parameters import Parameters
+from recognition.lp.solution import Solution
+from recognition.lp.variables.mapping_variables import create_edges_mapping_variables
+from recognition.lp.constraints.const0 import const0
+from recognition.lp.constraints.const1 import const1
+from recognition.lp.constraints.const2 import const2
+from recognition.lp.objectives.minimize_cost import minimize_cost
+from recognition.mappings.mapping import Mapping
+from recognition.mappings.mapping_cost import MappingCost
 from utils.config import Config
 
 logger = logging.getLogger(__name__)
@@ -33,7 +33,8 @@ class Solver:
             counter = self._assign_name_to_node(names, counter, node)
         return counter
 
-    def __init__(self, g: InputGraph, h: InputGraph, costs: dict[Mapping, MappingCost]):
+    def __init__(self, g: InputGraph, h: InputGraph, costs: dict[Mapping, MappingCost], check_homomorphic: bool = True):
+        self.check_homomorphic = check_homomorphic
         self.start = time.time()
         self.parameters = Parameters(g, h, costs)
         self._create_variables()
@@ -49,7 +50,8 @@ class Solver:
         logger.debug("Setting up constraints initiated")
         const0(self.parameters)
         const1(self.parameters)
-        const2(self.parameters)
+        if self.check_homomorphic:
+            const2(self.parameters)
         logger.debug("Setting up constraints finished")
 
     def _set_objective(self):
@@ -61,8 +63,8 @@ class Solver:
         try:
             if Config().solve_integrally:
                 self.parameters.change_to_integral()
-            logger.info(f"Number of variables: {self.parameters.variables_num()}")
-            logger.info(f"Number of constraints: {self.parameters.constraints_num()}")
+            logger.debug(f"Number of variables: {self.parameters.variables_num()}")
+            logger.debug(f"Number of constraints: {self.parameters.constraints_num()}")
             logger.debug("Solving the problem initiated")
             status = self.parameters.solve()
             if status == pywraplp.Solver.OPTIMAL:

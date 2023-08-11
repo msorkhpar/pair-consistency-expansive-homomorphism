@@ -1,6 +1,6 @@
 import logging
 
-from lp.parameters import Parameters, NodePair
+from recognition.lp.parameters import Parameters, NodePair
 
 logger = logging.getLogger(__name__)
 

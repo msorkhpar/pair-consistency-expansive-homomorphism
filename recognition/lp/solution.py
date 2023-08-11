@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from lp.parameters import Parameters
+from recognition.lp.parameters import Parameters
 import logging
 
-from mappings.mapping import Mapping
-from mappings.mapping_cost import MappingCost
-from mappings.node_pair import NodePair
+from recognition.mappings.mapping import Mapping
+from recognition.mappings.mapping_cost import MappingCost
+from recognition.mappings.node_pair import NodePair
 
 logger = logging.getLogger(__name__)
 

@@ -1,6 +1,7 @@
 import logging
 
-from lp.parameters import Parameters, NodePair
+from recognition.lp.parameters import Parameters, NodePair
+from recognition.mappings.mapping import Mapping
 
 logger = logging.getLogger(__name__)
 
@@ -11,8 +12,12 @@ def __check_constraint_rule(parameters: Parameters, uv: NodePair):
         if w != v:
             uw = NodePair((u, w))
             for ij in parameters.h_paths:
+                if parameters.costs[Mapping(uv, ij)].cost > 100:
+                    continue
                 uv_ij = parameters.variable(uv, ij)
                 for st in parameters.h_paths:
+                    if parameters.costs[Mapping(uw, st)].cost > 100:
+                        continue
                     if ij.v1 != st.v1:
                         constraint = parameters.add_range_constraint(0, 1, f"{ij}&{st} Homomorphic constraint")
                         constraint.SetCoefficient(uv_ij, 1)

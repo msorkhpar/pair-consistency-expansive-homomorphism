@@ -1,6 +1,4 @@
-import math
-
-from lp.parameters import Parameters
+from recognition.lp.parameters import Parameters
 
 
 def minimize_cost(parameter: Parameters):
