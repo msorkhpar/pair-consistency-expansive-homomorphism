@@ -9,18 +9,48 @@ class Config:
     _instance = None
     load_dotenv('.env')
 
+    # General
     log_level: str = int(os.getenv('LOG_LEVEL', '10'))
+    processors_limit: int = int(os.getenv('NUMBER_OF_PROCESSES', '1'))
     log_format: str = os.getenv('LOG_FORMAT', '%(asctime)s %(levelname)s:%(name)s:%(funcName)s:%(message)s')
-    h_graph_path: str = os.getenv('H_GRAPH_PATH')
-    g_graph_path: str = os.getenv('G_GRAPH_PATH')
-    computerized_graphs_dir: str = os.getenv('COMPUTERIZED_GRAPHS_DIR')
-    mnist_graphs_dir: str = os.getenv('MNIST_GRAPHS_DIR')
+    output_dir: str = os.path.abspath(os.getenv("OUTPUT_DIR", "./output"))
+    temp_dir: str = os.path.abspath(os.getenv("TEMP_DIR", "/tmp"))
+    image_width: int = int(os.getenv('IMAGE_WIDTH', '1024'))
+    image_height: int = int(os.getenv('IMAGE_HEIGHT', '1024'))
+    build_skeletons: bool = True if os.getenv('BUILD_SKELETONS') == 'True' else False
+    build_graphs: bool = True if os.getenv('BUILD_SKELETONS') == 'True' else False
+
+    # LP
     solver_engine: str = os.getenv('SOLVER_ENGINE')
-    solve_integrally: bool = True if os.getenv('INTEGRAL') == 'True' else False
-    generate_mapping_diagrams: bool = True if os.getenv('GENERATE_MAPPING_DIAGRAMS') == 'True' else False
-    input_width: int = int(os.getenv('INPUT_WIDTH', '1024'))
-    input_height: int = int(os.getenv('INPUT_HEIGHT', '1024'))
-    save_stages_output: bool = True if os.getenv('SAVE_STAGES_OUTPUT', 'False') == 'True' else False
+    solve_integrally: bool = True if os.getenv('SOLVE_INTEGRALLY') == 'True' else False
+    alpha: int = int(os.getenv('ALPHA', '2'))
+    beta: int = int(os.getenv('BETA', '3'))
+    gamma: int = int(os.getenv('GAMMA', '9'))
+
+    # MNIST to Skeleton
+    mnist_image_threshold: int = int(os.getenv('MNIST_IMAGE_THRESHOLD', '100'))
+    mnist_skeletons_dir: str = os.path.abspath(os.getenv("MNIST_SKELETONS_DIR", "./output/mnist_skeletons"))
+
+    # Skeleton to Reduced Scaled Graph
+    graphs_dir: str = os.path.abspath(os.getenv("GRAPHS_DIR", "./output/graphs"))
+    reducer_lower_bound_node_size: int = int(os.getenv('REDUCER_LOWER_BOUND_NODE_SIZE', '30'))
+    reducer_upper_bound_node_size: int = int(os.getenv('REDUCER_UPPER_BOUND_NODE_SIZE', '80'))
+    small_edge_merger_threshold: int = int(os.getenv('SMALL_EDGE_MERGER_THRESHOLD', '80'))
+    intermediary_node_remover_threshold: int = int(os.getenv('INTERMEDIARY_NODE_REMOVER_THRESHOLD', '5'))
+    small_edge_remover_threshold_1: int = int(os.getenv('SMALL_EDGE_REMOVER_THRESHOLD_1', '30'))
+    small_edge_remover_threshold_2: int = int(os.getenv('SMALL_EDGE_REMOVER_THRESHOLD_2', '90'))
+
+    # Random samples to cluster representatives
+    number_of_clusters: int = int(os.getenv('NUM_OF_CLUSTERS', '10'))
+    top_n_clusters: int = int(os.getenv('TOP_N_CLUSTERS', '2'))
+    number_of_samples: int = int(os.getenv('NUM_OF_SAMPLES', '5'))
+
+    # Comparison
+    number_of_subjects: float = float(os.getenv('NUM_OF_SUBJECTS', '1000'))
+
+    os.makedirs(output_dir, exist_ok=True)
+    os.makedirs(mnist_skeletons_dir, exist_ok=True)
+    os.makedirs(graphs_dir, exist_ok=True)
 
     def __new__(cls):
         if not cls._instance:
@@ -30,15 +60,30 @@ class Config:
     def __str__(self):
         return f''' Config(
         log_level: {self.log_level},
+        processor_limit: {self.processors_limit},
         log_format: {self.log_format},
-        H_path:{self.h_graph_path},
-        G_path: {self.g_graph_path},
-        computerized_graphs_dir: {self.computerized_graphs_dir},
-        mnist_graphs_dir: {self.mnist_graphs_dir},
+        output_dir: {self.output_dir},
+        temp_dir: {self.temp_dir},
+        image_width: {self.image_width},
+        image_height: {self.image_height},
+        build_skeletons: {self.build_skeletons},
+        build_graphs: {self.build_graphs},
         solver_engine: {self.solver_engine},
-        solve_integrally = {self.solve_integrally},
-        generate_mapping_diagrams = {self.generate_mapping_diagrams},
-        input_width: {self.input_width},
-        input_height: {self.input_height},
-        save_stages_output: {self.save_stages_output}
+        solve_integrally: {self.solve_integrally},
+        alpha: {self.alpha},
+        beta: {self.beta},
+        gamma: {self.gamma},
+        mnist_image_threshold: {self.mnist_image_threshold},
+        mnist_skeletons_dir: {self.mnist_skeletons_dir},
+        graphs_dir: {self.graphs_dir},
+        reducer_lower_bound_node_size: {self.reducer_lower_bound_node_size},
+        reducer_upper_bound_node_size: {self.reducer_upper_bound_node_size},
+        small_edge_merger_threshold: {self.small_edge_merger_threshold},
+        intermediary_node_remover_threshold: {self.intermediary_node_remover_threshold},
+        small_edge_remover_threshold_1: {self.small_edge_remover_threshold_1},
+        small_edge_remover_threshold_2: {self.small_edge_remover_threshold_2},
+        number_of_clusters: {self.number_of_clusters},
+        top_clusters: {self.top_n_clusters},
+        number_of_samples: {self.number_of_samples},
+        number_of_subjects: {self.number_of_subjects}
         )'''

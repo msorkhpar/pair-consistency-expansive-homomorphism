@@ -1,9 +1,0 @@
-#/mnt/Data/Projects/Python/English-digits-simplified-structure-graph/main.py
-# GMT Mon Aug  7 23:50:31 2023
-# 
-(614, 0)|(307, 819)
-(307, 819)|(384, 1024)|(512, 768)
-(384, 1024)|(640, 1024)
-(640, 1024)|(716, 853)
-(716, 853)|(512, 768)
-(512, 768)

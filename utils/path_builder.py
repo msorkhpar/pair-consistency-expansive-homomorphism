@@ -3,7 +3,7 @@ import math
 import networkx as nx
 
 
-def _find_paths(graph: nx.Graph):
+def find_paths(graph: nx.Graph):
     g = graph.to_undirected()
 
     paths = {}
@@ -105,7 +105,7 @@ def build_degree_two_paths(h: nx.Graph, use_paths=False) -> dict[
     h_pairs = {}
 
     if use_paths:
-        paths = _find_paths(h)
+        paths = find_paths(h)
 
         h_pairs = {}
         for key, path in paths.items():

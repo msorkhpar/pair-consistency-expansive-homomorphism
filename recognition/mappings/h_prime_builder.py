@@ -7,6 +7,10 @@ class HPrime:
     def __init__(self, h: InputGraph, solution: Solution):
         self.prime_graph = nx.Graph()
         h_prime_length = 0
+        self.coverage = 0
+        if solution is None:
+            return
+
         for key in solution.variables.keys():
             u, v, i, j = key.e1.v1, key.e1.v2, key.e2.v1, key.e2.v2
             path = h.path((i, j)).path

@@ -14,6 +14,7 @@ gurobipy = "*"
 sympy = "*"
 netlsd = "*"
 scikit-learn = "*"
+scikit-image = "*"
 
 [dev-packages]
 

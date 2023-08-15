@@ -2,7 +2,7 @@ import math
 
 from recognition.mappings.node_pair import NodePair
 from utils.graph_frame_finder import find_aspect_ratio
-from utils.h_path_builder import build_degree_two_paths
+from utils.path_builder import build_degree_two_paths
 from utils.nxgraph_reader import construct_nxgraphs
 
 
@@ -33,7 +33,11 @@ class InputGraph:
                 result[node].add(node_pair)
         return result
 
-    def __init__(self, adjacency_list_path: str, use_paths: bool = False, label_postfix: str = ""):
+    def __init__(self, adjacency_list_path: str, use_paths: bool = False, label_postfix: str = "", name: str = "",
+                 digit: int = None):
+        self.digit = digit
+        self.name = name
+        self.adjacency_list_path = adjacency_list_path
         self.undirected_graph, self.directed_graph, self.self_loop_graph = construct_nxgraphs(
             adjacency_list_path, label_postfix
         )
