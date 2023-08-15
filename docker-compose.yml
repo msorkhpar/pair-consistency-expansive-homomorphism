@@ -13,6 +13,7 @@ services:
     volumes:
       - ./output:/app/output
       - ./gurobi.lic:/opt/gurobi/gurobi.lic:ro
+      - ./.app.env:/app/.app.env:ro
     deploy:
       resources:
         limits:

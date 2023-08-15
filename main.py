@@ -58,6 +58,7 @@ def get_digit_samples(labels):
 
 
 def get_base_graphs(digit_samples, version):
+    logger.info(f"Creating base graphs...")
     base_graphs_path = os.path.join(config.output_dir, version, "base_graphs")
     os.makedirs(base_graphs_path)
     base_graphs = get_nominates(digit_samples)
@@ -91,16 +92,19 @@ def main():
         digit_samples = get_digit_samples(labels)
 
         base_graphs = get_base_graphs(digit_samples, version)
-
+        logger.info(f"Base graphs are created and saved to {os.path.join(config.output_dir, version, 'base_graphs')}")
         csv_path = os.path.join(config.output_dir, version, f"result.csv")
         with open(csv_path, "w") as f:
             f.write(f"G Name, H Name, G->H Cost, H->G Cost, Detected, Total Cost\n")
-
+        logger.info("Calculating recognition on the rest of the dataset...")
         with open(csv_path, "a") as f:
             for i in range(10):
                 for counter, idx in enumerate(digit_samples[i][config.number_of_samples:], 1):
                     if counter > config.number_of_subjects:
                         break
+                    if counter % len(digit_samples[i]) // 10 == 0:
+                        logger.info(
+                            f"Digit[{i}] - [{counter // len(digit_samples[i]) * 100}%] of subjects are processed.")
                     subject_graph = InputGraph(
                         os.path.join(config.graphs_dir, str(idx // 1000), f'{i}_{idx}.adjlist'), True,
                         name=f"{i}_{idx}", digit=i

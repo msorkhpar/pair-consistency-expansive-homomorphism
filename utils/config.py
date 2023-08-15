@@ -18,7 +18,7 @@ class Config:
     image_width: int = int(os.getenv('IMAGE_WIDTH', '1024'))
     image_height: int = int(os.getenv('IMAGE_HEIGHT', '1024'))
     build_skeletons: bool = True if os.getenv('BUILD_SKELETONS') == 'True' else False
-    build_graphs: bool = True if os.getenv('BUILD_SKELETONS') == 'True' else False
+    build_graphs: bool = True if os.getenv('BUILD_GRAPHS') == 'True' else False
 
     # LP
     solver_engine: str = os.getenv('SOLVER_ENGINE')
