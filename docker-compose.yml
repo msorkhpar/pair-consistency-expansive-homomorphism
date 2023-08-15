@@ -13,7 +13,6 @@ services:
     volumes:
       - ./output:/app/output
       - ./gurobi.lic:/opt/gurobi/gurobi.lic:ro
-    network_mode: host
     deploy:
       resources:
         limits:
