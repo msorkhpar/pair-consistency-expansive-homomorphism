@@ -1,7 +1,10 @@
 # Byte-compiled / optimized / DLL files
 .idea/
+gurobi.lic
+gurobi.log
 output/
 MNIST/
+.app.env
 
 __pycache__/
 *.py[cod]

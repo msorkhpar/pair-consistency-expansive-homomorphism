@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 @dataclass(frozen=True)
 class Config:
     _instance = None
-    load_dotenv('.env')
+    load_dotenv('.app.env')
 
     # General
     log_level: str = int(os.getenv('LOG_LEVEL', '10'))

@@ -16,7 +16,9 @@ from utils.config import Config
 from utils.result_drawer import GraphDrawer
 
 config = Config()
+version = datetime.now().strftime('%y-%m-%d %H:%M')
 logging.basicConfig(format=config.log_format,
+                    filename=os.path.join(config.output_dir, version, "app.log"),
                     datefmt='%Y-%m-%d %H:%M:%S',
                     level=config.log_level)
 logger = logging.getLogger(__name__)
@@ -87,7 +89,6 @@ def main():
 
         digit_samples = get_digit_samples(labels)
 
-        version = datetime.now().strftime('%y-%m-%d %H:%M')
         base_graphs = get_base_graphs(digit_samples, version)
 
         csv_path = os.path.join(config.output_dir, version, f"result.csv")
@@ -105,7 +106,7 @@ def main():
                     )
                     best_cost = find_best_cost(subject_graph, base_graphs)
                     f.write(f"{subject_graph.name},{','.join(map(str, best_cost))}\n")
-
+        logger.info(f"Results saved to {csv_path}!")
     except Exception as e:
         logger.exception(e)
 
