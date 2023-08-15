@@ -53,12 +53,12 @@ def _construct_distance_matrix(graphs: List[InputGraph]):
     n = len(graphs)
     distance_matrix = np.zeros((n, n))
     cached_costs = {}
-    with concurrent.futures.ThreadPoolExecutor(max_workers=config.processors_limit) as executor:
-        args = [(i, graphs, cached_costs) for i in range(n)]
-        results = list(executor.map(calculate_cost_concurrently, args))
-
-    for result in results:
-        for i, j, distance in result:
+    for c_i in range(n):
+        results = [
+            _distance(c_i, c_j, graphs[c_i], graphs[c_j], cached_costs) for c_j in
+            range(n)
+        ]
+        for i, j, distance in results:
             distance_matrix[i, j] = distance
     return distance_matrix
 
@@ -112,5 +112,10 @@ def _pick_cluster_nominates(digit: int, digit_samples: List[int]) -> List[InputG
     return nominates
 
 
-def get_nominates(digit_samples: dict[int, List[int]]) -> List[InputGraph]:
-    return [nominate for i in range(10) for nominate in _pick_cluster_nominates(i, digit_samples[i])]
+def get_nominates(digit_samples: dict[int, list[int]]) -> list[InputGraph]:
+    nominates = []
+    with concurrent.futures.ProcessPoolExecutor(max_workers=config.processors_limit) as executor:
+        futures = [executor.submit(_pick_cluster_nominates, i, digit_samples[i]) for i in range(10)]
+        for i, future in enumerate(futures):
+            nominates += future.result()
+    return nominates
