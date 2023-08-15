@@ -102,9 +102,6 @@ def main():
                 for counter, idx in enumerate(digit_samples[i][config.number_of_samples:], 1):
                     if counter > config.number_of_subjects:
                         break
-                    if counter % len(digit_samples[i]) // 10 == 0:
-                        logger.info(
-                            f"Digit[{i}] - [{counter // len(digit_samples[i]) * 100}%] of subjects are processed.")
                     subject_graph = InputGraph(
                         os.path.join(config.graphs_dir, str(idx // 1000), f'{i}_{idx}.adjlist'), True,
                         name=f"{i}_{idx}", digit=i

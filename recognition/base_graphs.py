@@ -1,5 +1,10 @@
+import concurrent
 import logging
 import os
+import concurrent.futures
+from multiprocessing import Manager
+from threading import Lock
+from typing import List
 
 import networkx as nx
 import numpy as np
@@ -8,10 +13,10 @@ from scipy.cluster.hierarchy import linkage, fcluster
 from recognition.digit_detector import compare
 from recognition.input_graph import InputGraph
 from utils.config import Config
-import concurrent.futures
 
 config = Config()
 logger = logging.getLogger(__name__)
+
 
 def _get_cost(base, target, base_id, target_id, cached_costs: dict[tuple[int, int], float]):
     if base_id == target_id:
@@ -35,23 +40,30 @@ def _distance(i, j, graph_i, graph_j, cached_costs):
     return i, j, distance
 
 
-def _construct_distance_matrix(graphs: list[InputGraph]):
+def calculate_cost_concurrently(args):
+    try:
+        c_i, graphs, cache_costs = args
+        return [_distance(c_i, c_j, graphs[c_i], graphs[c_j], cache_costs) for c_j in range(len(graphs))]
+    except Exception as e:
+        print(f"Error in getting the distance: {e}")
+        return []
+
+
+def _construct_distance_matrix(graphs: List[InputGraph]):
     n = len(graphs)
     distance_matrix = np.zeros((n, n))
-
     cached_costs = {}
-    for c_i in range(n):
-        results = [
-            _distance(c_i, c_j, graphs[c_i], graphs[c_j], cached_costs) for c_j in
-            range(n)
-        ]
-        for r_i, r_j, r_distance in results:
-            distance_matrix[r_i, r_j] = r_distance
+    with concurrent.futures.ThreadPoolExecutor(max_workers=config.processors_limit) as executor:
+        args = [(i, graphs, cached_costs) for i in range(n)]
+        results = list(executor.map(calculate_cost_concurrently, args))
 
+    for result in results:
+        for i, j, distance in result:
+            distance_matrix[i, j] = distance
     return distance_matrix
 
 
-def _cluster(distance_matrix, graphs) -> list[InputGraph]:
+def _cluster(distance_matrix, graphs) -> List[InputGraph]:
     Z = linkage(distance_matrix, method='complete')
     labels = fcluster(Z, t=config.number_of_clusters, criterion='maxclust')
 
@@ -82,7 +94,7 @@ def _cluster(distance_matrix, graphs) -> list[InputGraph]:
     return nominates
 
 
-def _pick_cluster_nominates(digit: int, digit_samples: list[int]) -> list[InputGraph]:
+def _pick_cluster_nominates(digit: int, digit_samples: List[int]) -> List[InputGraph]:
     logger.info(f"Creating distance matrix for digit [{digit}]...")
     graphs = []
     for j in range(config.number_of_samples):
@@ -96,14 +108,9 @@ def _pick_cluster_nominates(digit: int, digit_samples: list[int]) -> list[InputG
     distance_matrix = _construct_distance_matrix(graphs)
     logger.info(f"Distance matrix for digit [{digit}] is constructed.")
     nominates = _cluster(distance_matrix, graphs)
-    logger.info(f"Cluster representatives of {len(nominates)} for digit [{digit}] are selected.")
+    logger.info(f"Digit [{digit}] will have [{len(nominates)}] representatives graphs.")
     return nominates
 
 
-def get_nominates(digit_samples: dict[int, list[int]]) -> list[InputGraph]:
-    nominates = []
-    with concurrent.futures.ProcessPoolExecutor(max_workers=config.processors_limit) as executor:
-        futures = [executor.submit(_pick_cluster_nominates, i, digit_samples[i]) for i in range(10)]
-        for i, future in enumerate(futures):
-            nominates += future.result()
-    return nominates
+def get_nominates(digit_samples: dict[int, List[int]]) -> List[InputGraph]:
+    return [nominate for i in range(10) for nominate in _pick_cluster_nominates(i, digit_samples[i])]
