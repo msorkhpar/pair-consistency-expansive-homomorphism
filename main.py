@@ -1,102 +1,115 @@
-import csv
 import logging
-import math
-
-import networkx as nx
-import pandas as pd
-
-import logging
-
 import os
+import random
 import shutil
+from datetime import datetime
+import concurrent.futures
 
-from input_graphs.input_graph import InputGraph
-from lp.solver import Solver
-from mappings import mapper
-from mappings.h_prime_builder import HPrime
+from sklearn.datasets import fetch_openml
+
+from recognition.base_graphs import get_nominates
+from recognition.digit_detector import calculate_cost_concurrently
+from recognition.input_graph import InputGraph
+from reduction.graph_simplifier import reduce_graphs_edges
+from skeletonization.mnist_skeleton import skeletonize_mnist_dataset
 from utils.config import Config
-from utils.result_drawer import MappingDrawer
+from utils.result_drawer import GraphDrawer
 
+config = Config()
+version = datetime.now().strftime('%y-%m-%d %H:%M')
+logging.basicConfig(format=config.log_format,
+                    filename=os.path.join(config.output_dir, version, "app.log"),
+                    datefmt='%Y-%m-%d %H:%M:%S',
+                    level=config.log_level)
 logger = logging.getLogger(__name__)
-alpha = 2
-beta = 3
-gamma = 9
-
-use_path_in_g_prime = True
-use_path_in_h_prime = True
+logger.info(f"Loaded configurations:{config}")
 
 
-def compare(base_graph: InputGraph, target_graph: InputGraph):
-    costs = mapper.MapGtoH(base_graph, target_graph, alpha, beta, gamma).calculate_mapping_costs()
-    solution = Solver(base_graph, target_graph, costs).solve()
-    target_prime = HPrime(target_graph, solution)
-    return costs, solution, target_prime
+def find_best_cost(subject_graph, base_graphs):
+    best_score = float("inf")
+    best_result = {
+        "base_graph_name": "N/A",
+        "g_to_h_cost": float("inf"),
+        "h_to_g_cost": float("inf"),
+        "detected": False,
+        "cost": float("inf")
+    }
+
+    with concurrent.futures.ProcessPoolExecutor() as executor:
+        args = [(subject_graph, base_graph) for base_graph in base_graphs]
+        for result in executor.map(calculate_cost_concurrently, args):
+            if result["cost"] != -1 and result["cost"] < best_score:
+                best_score = result["cost"]
+                best_result = result
+
+    return [best_result["base_graph_name"], best_result["g_to_h_cost"], best_result["h_to_g_cost"],
+            best_result["detected"], best_result["cost"]]
+
+
+def get_digit_samples(labels):
+    digit_samples = {}
+    for idx in range(len(labels)):
+        label = labels[idx]
+        digit_samples.setdefault(label, []).append(idx)
+    for key in digit_samples:
+        random.shuffle(digit_samples[key])
+    return digit_samples
+
+
+def get_base_graphs(digit_samples, version):
+    base_graphs_path = os.path.join(config.output_dir, version, "base_graphs")
+    os.makedirs(base_graphs_path)
+    base_graphs = get_nominates(digit_samples)
+
+    for base_graph in base_graphs:
+        shutil.copy(
+            base_graph.adjacency_list_path,
+            os.path.join(base_graphs_path, f"{base_graph.name}.adjlist")
+        )
+        GraphDrawer(
+            base_graph.undirected_graph,
+            os.path.join(base_graphs_path, f"{base_graph.name}.png")
+        ).convert_graph_to_cv2_image(color=(0, 0, 255))
+
+    return base_graphs
+
+
+def main():
+    try:
+        logger.info(f"Loading MNIST dataset...")
+        mnist = fetch_openml('mnist_784', data_home=config.temp_dir)
+        images = mnist.data.to_numpy()
+        labels = mnist.target.astype('int64')
+
+        if config.build_skeletons:
+            skeletonize_mnist_dataset(images, labels)
+
+        if config.build_graphs:
+            reduce_graphs_edges(labels)
+
+        digit_samples = get_digit_samples(labels)
+
+        base_graphs = get_base_graphs(digit_samples, version)
+
+        csv_path = os.path.join(config.output_dir, version, f"result.csv")
+        with open(csv_path, "w") as f:
+            f.write(f"G Name, H Name, G->H Cost, H->G Cost, Detected, Total Cost\n")
+
+        with open(csv_path, "a") as f:
+            for i in range(10):
+                for counter, idx in enumerate(digit_samples[i][config.number_of_samples:], 1):
+                    if counter > config.number_of_subjects:
+                        break
+                    subject_graph = InputGraph(
+                        os.path.join(config.graphs_dir, str(idx // 1000), f'{i}_{idx}.adjlist'), True,
+                        name=f"{i}_{idx}", digit=i
+                    )
+                    best_cost = find_best_cost(subject_graph, base_graphs)
+                    f.write(f"{subject_graph.name},{','.join(map(str, best_cost))}\n")
+        logger.info(f"Results saved to {csv_path}!")
+    except Exception as e:
+        logger.exception(e)
 
 
 if __name__ == '__main__':
-    statr_time = os.times()[0]
-    config = Config()
-    logging.basicConfig(format='%(asctime)s %(levelname)s:%(name)s:%(funcName)s:%(message)s',
-                        datefmt='%Y-%m-%d %H:%M:%S',
-                        level=config.log_level)
-    logger = logging.getLogger(__name__)
-
-    logger.info(f"Loaded configurations:{config}")
-    output_path = "./output"
-    shutil.rmtree(output_path, ignore_errors=True)
-    os.makedirs(output_path)
-
-    g = InputGraph(config.g_graph_path, use_path_in_g_prime)
-
-    result = []
-    for root, directories, h_adjlists in os.walk(config.computerized_graphs_dir):
-        for h_adjlist in h_adjlists:
-            h_adjlist_path = os.path.join(root, h_adjlist)
-            h_name = h_adjlist.split(".")[0]
-            h = InputGraph(h_adjlist_path, use_path_in_h_prime, "'")
-
-            g_h_costs, g_h_solution, h_prime = compare(g, h)
-            logger.info(g_h_solution)
-
-            h_g_costs, h_g_solution, g_prime = compare(h, g)
-            logger.info(h_g_solution)
-            if config.generate_mapping_diagrams:
-                MappingDrawer(os.path.join(output_path, f"{h_name}.png"), g.undirected_graph, h.undirected_graph,
-                              h_prime.prime_graph, g_h_solution.variables, g_prime.prime_graph,
-                              h_g_solution.variables).draw()
-
-            result.append([
-                h_name, g_h_solution.cost, h_g_solution.cost, g_prime.coverage, h_prime.coverage
-            ])
-
-    columns = [f"{config.g_graph_path} To Target", "Cost_LP(G,H)", "Cost_LP(H,G)", "G' Coverage", "H' Coverage"]
-    with open(os.path.join(output_path, "result.csv"), 'w') as file:
-        writer = csv.writer(file)
-        writer.writerow(columns)
-        writer.writerows(result)
-
-    df = pd.DataFrame(result, columns=columns)
-
-    df_normalized = df.copy()
-    for column in df_normalized.columns[1:]:
-        max_value = df_normalized[column].max()
-        min_value = df_normalized[column].min()
-        if max_value == 0:
-            df_normalized[column] = 0
-        else:
-            df_normalized[column] = round(df_normalized[column], 2)
-
-    g_h_cost = df_normalized[df_normalized.columns[1]]
-    h_g_cost = df_normalized[df_normalized.columns[2]]
-    g_prime_coverage = df_normalized[df_normalized.columns[3]]
-    h_prime_coverage = df_normalized[df_normalized.columns[4]]
-
-    score = g_h_cost + g_h_cost * (1 - h_prime_coverage) + h_g_cost + h_g_cost * (1 - g_prime_coverage)
-    df_normalized['Score'] = round(score, 3)
-    df_normalized.sort_values(by='Score', ascending=True, inplace=True)
-
-    df_normalized.to_csv(os.path.join(output_path, "normalized_result.csv"), index=False)
-    logger.info(f"Total time: {os.times()[0] - statr_time}")
-    logger.info("*"*50)
-    for index, rank_name in [(0, "Fist"), (1, "Second"), (2, "Third")]:
-        logger.info(f"{rank_name} rank is: {df_normalized.iloc[index][0]} = {df_normalized.iloc[index][5]}")
+    main()

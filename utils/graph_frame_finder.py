@@ -3,8 +3,6 @@ import math
 import networkx as nx
 import numpy as np
 
-from utils.config import Config
-
 
 def find_aspect_ratio(graph: nx.Graph):
     x1, y1 = np.inf, np.inf

@@ -1,0 +1,8 @@
+.venv/
+.env-sample
+.gitignore
+.git/
+MNIST/
+output/
+LICENSE
+README.md

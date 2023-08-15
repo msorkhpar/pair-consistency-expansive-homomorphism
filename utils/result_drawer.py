@@ -2,8 +2,28 @@ import networkx as nx
 import numpy as np
 import cv2
 
-from mappings.mapping import Mapping
-from mappings.mapping_cost import MappingCost
+from recognition.mappings.mapping import Mapping
+from recognition.mappings.mapping_cost import MappingCost
+from utils.config import Config
+
+
+class GraphDrawer:
+    def convert_graph_to_cv2_image(self, color=(0, 0, 0), size: int = 1):
+        output = np.ones((self.config.image_width, self.config.image_height, 3), np.uint8) * 255
+
+        for u, v in self.graph.edges:
+            x1, y1 = u
+            x2, y2 = v
+            cv2.line(output, (x1, y1), (x2, y2), (0, 0, 0), 1)
+        for x, y in self.graph.nodes:
+            cv2.circle(output, (x, y,), size, color, -1)
+
+        cv2.imwrite(self.output_path, output)
+
+    def __init__(self, graph, output_path):
+        self.graph = graph
+        self.output_path = output_path
+        self.config = Config()
 
 
 class MappingDrawer:
