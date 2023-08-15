@@ -17,6 +17,7 @@ from utils.result_drawer import GraphDrawer
 
 config = Config()
 version = datetime.now().strftime('%y-%m-%d %H:%M')
+os.makedirs(os.path.join(config.output_dir, version))
 logging.basicConfig(format=config.log_format,
                     filename=os.path.join(config.output_dir, version, "app.log"),
                     datefmt='%Y-%m-%d %H:%M:%S',
