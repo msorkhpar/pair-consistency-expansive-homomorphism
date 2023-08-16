@@ -106,9 +106,8 @@ def _pick_cluster_nominates(digit: int, digit_samples: List[int]) -> List[InputG
         if graph.undirected_graph.number_of_nodes() > 1 and nx.number_connected_components(graph.undirected_graph) == 1:
             graphs.append(graph)
     distance_matrix = _construct_distance_matrix(graphs)
-    logger.info(f"Distance matrix for digit [{digit}] is constructed.")
     nominates = _cluster(distance_matrix, graphs)
-    logger.info(f"Digit [{digit}] will have [{len(nominates)}] representatives graphs.")
+    logger.info(f"Distance matrix for digit [{digit}] is constructed.")
     return nominates
 
 
