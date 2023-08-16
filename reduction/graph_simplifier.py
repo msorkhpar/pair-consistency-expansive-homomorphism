@@ -19,6 +19,7 @@ from utils.result_drawer import GraphDrawer
 config = Config()
 logger = logging.getLogger(__name__)
 
+
 class GraphSimplifier:
     def _extract_graph_measurements(self):
         self.x1, self.y1 = np.inf, np.inf
@@ -122,6 +123,10 @@ class GraphSimplifier:
                 to_remove_nodes.add(u)
             self.graph.remove_nodes_from(to_remove_nodes)
 
+    def remove_isolated_nodes(self):
+        isolated_nodes = [node for node in self.graph.nodes() if self.graph.degree(node) == 0]
+        self.graph.remove_nodes_from(isolated_nodes)
+
     def scale(self):
         mapping = dict()
         shift_x = int((self.config.image_width - (self.width * self.width_factor)) / 2)
@@ -137,6 +142,7 @@ class GraphSimplifier:
     def save_graph_to_file(self, destination_path):
         nx.write_adjlist(self.graph, destination_path, delimiter="|")
 
+
 def worker(args):
     idx, skeleton_path, graph_path, graph_image_path = args
     if idx % 1000 == 0:
@@ -147,6 +153,7 @@ def worker(args):
     remove_intermediary_nodes(graph_processor.graph, config.intermediary_node_remover_threshold)
     graph_processor.process_small_edges(config.small_edge_remover_threshold_1, False)
     graph_processor.process_small_edges(config.small_edge_remover_threshold_2, False)
+    graph_processor.remove_isolated_nodes()
     graph_processor.scale()
     graph_processor.save_graph_to_file(graph_path)
     GraphDrawer(graph_processor.graph, graph_image_path).convert_graph_to_cv2_image(color=(0, 0, 255))

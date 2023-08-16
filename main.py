@@ -108,9 +108,11 @@ def main():
                     )
                     best_cost = find_best_cost(subject_graph, base_graphs)
                     f.write(f"{subject_graph.name},{','.join(map(str, best_cost))}\n")
-                    if counter % 500 == 0:
+                    if counter % 10 == 0:
                         f.flush()
-                        logger.info(f"Digit [{i}], {counter}/{config.number_of_subjects} is done!")
+                    if counter % 500 == 0:
+                        logger.info(f"Digit [{i}], {counter}/{len(digit_samples[i])} is done!")
+
                 f.flush()
         logger.info(f"Results saved to {csv_path}!")
     except Exception as e:
