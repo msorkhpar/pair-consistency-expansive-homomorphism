@@ -13,6 +13,7 @@ from recognition.input_graph import InputGraph
 from reduction.graph_simplifier import reduce_graphs_edges
 from skeletonization.mnist_skeleton import skeletonize_mnist_dataset
 from utils.config import Config
+from utils.confusion_matrix_builder import build_confusion_matrix
 from utils.result_drawer import GraphDrawer
 
 config = Config()
@@ -122,6 +123,7 @@ def main():
 
             f.flush()
         logger.info(f"Results saved to {csv_path}!")
+        build_confusion_matrix(csv_path, os.path.join(config.output_dir, version))
     except Exception as e:
         logger.exception(e)
 
