@@ -97,23 +97,30 @@ def main():
         with open(csv_path, "w") as f:
             f.write(f"G Name, H Name, G->H Cost, H->G Cost, Detected, Total Cost\n")
         logger.info("Calculating recognition on the rest of the dataset...")
-        with open(csv_path, "a") as f:
-            for i in range(10):
-                for counter, idx in enumerate(digit_samples[i][config.number_of_samples:], 1):
-                    if counter > config.number_of_subjects:
-                        break
-                    subject_graph = InputGraph(
-                        os.path.join(config.graphs_dir, str(idx // 1000), f'{i}_{idx}.adjlist'), True,
-                        name=f"{i}_{idx}", digit=i
-                    )
-                    best_cost = find_best_cost(subject_graph, base_graphs)
-                    f.write(f"{subject_graph.name},{','.join(map(str, best_cost))}\n")
-                    if counter % 10 == 0:
-                        f.flush()
-                    if counter % 500 == 0:
-                        logger.info(f"Digit [{i}], {counter}/{len(digit_samples[i])} is done!")
 
-                f.flush()
+        shuffled_digit_samples = []
+        max_len = max(len(arr) for arr in digit_samples.values())
+        for j in range(config.number_of_samples, max_len):
+            for i in range(10):
+                if j < len(digit_samples[i]):
+                    shuffled_digit_samples.append((i, digit_samples[i][j]))
+
+        with open(csv_path, "a") as f:
+            for counter, (i, idx) in enumerate(shuffled_digit_samples):
+                if counter > config.number_of_subjects:
+                    break
+                subject_graph = InputGraph(
+                    os.path.join(config.graphs_dir, str(idx // 1000), f'{i}_{idx}.adjlist'), True,
+                    name=f"{i}_{idx}", digit=i
+                )
+                best_cost = find_best_cost(subject_graph, base_graphs)
+                f.write(f"{subject_graph.name},{','.join(map(str, best_cost))}\n")
+                if counter % 10 == 0:
+                    f.flush()
+                if counter % 500 == 0:
+                    logger.info(f"{counter}/{len(shuffled_digit_samples)} is done!")
+
+            f.flush()
         logger.info(f"Results saved to {csv_path}!")
     except Exception as e:
         logger.exception(e)
