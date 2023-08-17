@@ -15,6 +15,7 @@ sympy = "*"
 netlsd = "*"
 scikit-learn = "*"
 scikit-image = "*"
+seaborn = "*"
 
 [dev-packages]
 
