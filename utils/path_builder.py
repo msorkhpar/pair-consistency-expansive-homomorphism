@@ -1,17 +1,22 @@
+import logging
 import math
 
 import networkx as nx
 
+logger = logging.getLogger(__name__)
+
 
 def find_paths(graph: nx.Graph):
-    g = graph.to_undirected()
+    g: nx.Graph = graph.to_undirected()
 
     paths = {}
     start = next(filter(lambda node: g.degree(node) != 2, g.nodes), None)
-    if start is None and len(g.nodes) > 0:
-        start = next(iter(g.nodes))
-    else:
+    if start is None and g.number_of_nodes() == 0:
+        logger.error("Graph is empty, so there is no path to find.")
         return paths
+    else:
+        start = next(iter(g.nodes))
+
     stack: list[any, tuple[any, any]] = []
     visited = set()
     for start_neighbor in g.neighbors(start):
