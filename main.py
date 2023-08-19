@@ -2,6 +2,7 @@ import logging
 import os
 import random
 import shutil
+import traceback
 from datetime import datetime
 import concurrent.futures
 
@@ -110,17 +111,21 @@ def main():
             for counter, (i, idx) in enumerate(shuffled_digit_samples):
                 if counter > config.number_of_subjects:
                     break
-                subject_graph = InputGraph(
-                    os.path.join(config.graphs_dir, str(idx // 1000), f'{i}_{idx}.adjlist'), True,
-                    name=f"{i}_{idx}", digit=i
-                )
-                best_cost = find_best_cost(subject_graph, base_graphs)
-                f.write(f"{subject_graph.name},{','.join(map(str, best_cost))}\n")
-                if counter % 10 == 0:
-                    f.flush()
-                if counter % 500 == 0:
-                    logger.info(f"{counter}/{len(shuffled_digit_samples)} is done!")
-
+                try:
+                    subject_graph = InputGraph(
+                        os.path.join(config.graphs_dir, str(idx // 1000), f'{i}_{idx}.adjlist'), True,
+                        name=f"{i}_{idx}", digit=i
+                    )
+                    best_cost = find_best_cost(subject_graph, base_graphs)
+                    f.write(f"{subject_graph.name},{','.join(map(str, best_cost))}\n")
+                    if counter % 10 == 0:
+                        f.flush()
+                    if counter % 500 == 0:
+                        logger.info(f"{counter}/{len(shuffled_digit_samples)} is done!")
+                except BaseException as e:
+                    logging.error(traceback.format_exc())
+                    f.write(f"{subject_graph.name},None,-1,-1,False,-1\n")
+                    continue
             f.flush()
         logger.info(f"Results saved to {csv_path}!")
         build_confusion_matrix(csv_path, os.path.join(config.output_dir, version))

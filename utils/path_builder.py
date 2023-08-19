@@ -8,8 +8,10 @@ def find_paths(graph: nx.Graph):
 
     paths = {}
     start = next(filter(lambda node: g.degree(node) != 2, g.nodes), None)
-    if start is None:
+    if start is None and len(g.nodes) > 0:
         start = next(iter(g.nodes))
+    else:
+        return paths
     stack: list[any, tuple[any, any]] = []
     visited = set()
     for start_neighbor in g.neighbors(start):
