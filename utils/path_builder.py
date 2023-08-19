@@ -11,11 +11,12 @@ def find_paths(graph: nx.Graph):
 
     paths = {}
     start = next(filter(lambda node: g.degree(node) != 2, g.nodes), None)
-    if start is None and g.number_of_nodes() == 0:
-        logger.error("Graph is empty, so there is no path to find.")
-        return paths
-    else:
-        start = next(iter(g.nodes))
+    if start is None:
+        if g.number_of_nodes() == 0:
+            logger.error("Graph is empty, so there is no path to find.")
+            return paths
+        else:
+            start = next(iter(g.nodes))
 
     stack: list[any, tuple[any, any]] = []
     visited = set()
