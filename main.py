@@ -6,6 +6,7 @@ import traceback
 from datetime import datetime
 import concurrent.futures
 
+import numpy as np
 from sklearn.datasets import fetch_openml
 
 from recognition.base_graphs import get_nominates
@@ -18,10 +19,9 @@ from utils.confusion_matrix_builder import build_confusion_matrix
 from utils.result_drawer import GraphDrawer
 
 config = Config()
-version = datetime.now().strftime('%y-%m-%d %H:%M')
-os.makedirs(os.path.join(config.output_dir, version))
+os.makedirs(os.path.join(config.output_dir), exist_ok=True)
 logging.basicConfig(format=config.log_format,
-                    filename=os.path.join(config.output_dir, version, "app.log"),
+                    filename=os.path.join(config.output_dir, "app.log"),
                     datefmt='%Y-%m-%d %H:%M:%S',
                     level=config.log_level)
 logger = logging.getLogger(__name__)
@@ -38,7 +38,7 @@ def find_best_cost(subject_graph, base_graphs):
         "cost": float("inf")
     }
 
-    with concurrent.futures.ProcessPoolExecutor() as executor:
+    with concurrent.futures.ProcessPoolExecutor(max_workers=config.processors_limit) as executor:
         args = [(subject_graph, base_graph) for base_graph in base_graphs]
         for result in executor.map(calculate_cost_concurrently, args):
             if result["cost"] != -1 and result["cost"] < best_score:
@@ -54,55 +54,56 @@ def get_digit_samples(labels):
     for idx in range(len(labels)):
         label = labels[idx]
         digit_samples.setdefault(label, []).append(idx)
-    for key in digit_samples:
-        random.shuffle(digit_samples[key])
+
     return digit_samples
 
 
-def get_base_graphs(digit_samples, version):
-    logger.info(f"Creating base graphs...")
-    base_graphs_path = os.path.join(config.output_dir, version, "base_graphs")
-    os.makedirs(base_graphs_path)
-    base_graphs = get_nominates(digit_samples)
-
-    for base_graph in base_graphs:
-        shutil.copy(
-            base_graph.adjacency_list_path,
-            os.path.join(base_graphs_path, f"{base_graph.name}.adjlist")
+def get_base_graphs(base_labels):
+    logger.info(f"Moving base graphs...")
+    base_graphs_path = os.path.join(config.output_dir, "base_graphs")
+    os.makedirs(base_graphs_path, exist_ok=True)
+    base_graphs = []
+    for idx, digit in enumerate(base_labels):
+        graph = InputGraph(
+            os.path.join(config.graphs_dir, f'{digit}_{idx}.adjlist'), True,
+            name=f"{digit}_{idx}", digit=digit
         )
-        GraphDrawer(
-            base_graph.undirected_graph,
-            os.path.join(base_graphs_path, f"{base_graph.name}.png")
-        ).convert_graph_to_cv2_image(color=(0, 0, 255))
+        shutil.copy(
+            graph.adjacency_list_path,
+            os.path.join(base_graphs_path, f"{graph.name}.adjlist")
+        )
+        base_graphs.append(graph)
 
     return base_graphs
 
 
 def main():
     try:
-        logger.info(f"Loading MNIST dataset...")
-        mnist = fetch_openml('mnist_784', data_home=config.temp_dir)
-        images = mnist.data.to_numpy()
-        labels = mnist.target.astype('int64')
+        logger.info(f"Loading dataset...")
+        base_images = np.load("./input/base_images.npy")
+        base_labels = np.load("./input/base_labels.npy")
+        correct_images = np.load("./input/correct_images.npy")
+        correct_labels = np.load("./input/correct_labels.npy")
+        mistake_images = np.load("./input/mistake_images.npy")
+        mistake_labels = np.load("./input/mistake_labels.npy")
 
-        if config.build_skeletons:
-            skeletonize_mnist_dataset(images, labels)
-
-        if config.build_graphs:
-            reduce_graphs_edges(labels)
+        images = np.concatenate((base_images, correct_images, mistake_images))
+        labels = np.concatenate((base_labels, correct_labels, mistake_labels))
+        skeletonize_mnist_dataset(images, labels)
+        reduce_graphs_edges(labels)
+        base_graphs = get_base_graphs(base_labels)
+        logger.info(f"Base graphs are created and saved to {os.path.join(config.output_dir, 'base_graphs')}")
 
         digit_samples = get_digit_samples(labels)
 
-        base_graphs = get_base_graphs(digit_samples, version)
-        logger.info(f"Base graphs are created and saved to {os.path.join(config.output_dir, version, 'base_graphs')}")
-        csv_path = os.path.join(config.output_dir, version, f"result.csv")
+        csv_path = os.path.join(config.output_dir, f"result.csv")
         with open(csv_path, "w") as f:
             f.write(f"G Name, H Name, G->H Cost, H->G Cost, Detected, Total Cost\n")
         logger.info("Calculating recognition on the rest of the dataset...")
 
         shuffled_digit_samples = []
         max_len = max(len(arr) for arr in digit_samples.values())
-        for j in range(config.number_of_samples, max_len):
+        for j in range(4, max_len):
             for i in range(10):
                 if j < len(digit_samples[i]):
                     shuffled_digit_samples.append((i, digit_samples[i][j]))
@@ -113,14 +114,14 @@ def main():
                     break
                 try:
                     subject_graph = InputGraph(
-                        os.path.join(config.graphs_dir, str(idx // 1000), f'{i}_{idx}.adjlist'), True,
+                        os.path.join(config.graphs_dir, f'{i}_{idx}.adjlist'), True,
                         name=f"{i}_{idx}", digit=i
                     )
                     best_cost = find_best_cost(subject_graph, base_graphs)
                     f.write(f"{subject_graph.name},{','.join(map(str, best_cost))}\n")
                     if counter % 10 == 0:
                         f.flush()
-                    if counter % 500 == 0:
+                    if counter % 100 == 0:
                         logger.info(f"{counter}/{len(shuffled_digit_samples)} is done!")
                 except BaseException as e:
                     logging.error(traceback.format_exc())
@@ -128,7 +129,7 @@ def main():
                     continue
             f.flush()
         logger.info(f"Results saved to {csv_path}!")
-        build_confusion_matrix(csv_path, os.path.join(config.output_dir, version))
+        build_confusion_matrix(csv_path, os.path.join(config.output_dir))
     except Exception as e:
         logger.exception(e)
 

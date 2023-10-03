@@ -145,8 +145,6 @@ class GraphSimplifier:
 
 def worker(args):
     idx, skeleton_path, graph_path, graph_image_path = args
-    if idx % 1000 == 0:
-        logger.info(f"Processing {idx // 1000}k/70k...")
     graph_processor = GraphSimplifier(skeleton_path)
     graph_processor.reduce_graph_size()
     graph_processor.process_small_edges(config.small_edge_merger_threshold, True)
@@ -156,20 +154,16 @@ def worker(args):
     graph_processor.remove_isolated_nodes()
     graph_processor.scale()
     graph_processor.save_graph_to_file(graph_path)
-    GraphDrawer(graph_processor.graph, graph_image_path).convert_graph_to_cv2_image(color=(0, 0, 255))
 
 
 def reduce_graphs_edges(labels):
     logger.info(f"Simplifying...")
-    for i in range(70):
-        os.makedirs(os.path.join(config.graphs_dir, str(i)), exist_ok=True)
-
     processing_queue = []
     for idx in range(len(labels)):
         label = labels[idx]
-        skeleton_path = os.path.join(config.mnist_skeletons_dir, str(idx // 1000), f'{label}_{idx}.png')
-        graph_path = os.path.join(config.graphs_dir, str(idx // 1000), f'{label}_{idx}.adjlist')
-        graph_image_path = os.path.join(config.graphs_dir, str(idx // 1000), f'{label}_{idx}.png')
+        skeleton_path = os.path.join(config.mnist_skeletons_dir, f'{label}_{idx}.png')
+        graph_path = os.path.join(config.graphs_dir, f'{label}_{idx}.adjlist')
+        graph_image_path = os.path.join(config.graphs_dir, f'{label}_{idx}.png')
         if os.path.exists(graph_path) or not os.path.exists(skeleton_path):
             continue
         processing_queue.append((idx, skeleton_path, graph_path, graph_image_path))
